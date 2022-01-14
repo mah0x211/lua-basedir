@@ -13,7 +13,7 @@ luarocks install basedir
 ```
 
 
-## rd = basedir.new( pathname [, opts] )
+## bd = basedir.new( pathname [, opts] )
 
 create a basedir object.
 
