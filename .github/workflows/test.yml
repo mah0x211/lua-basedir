@@ -49,9 +49,8 @@ jobs:
     -
       name: Install Tools
       run: |
-        luarocks install luacov-coveralls
-        luarocks remove lua-path --force
         luarocks install testcase
+        luarocks install luacov
     -
       name: Install
       run: |
@@ -66,5 +65,5 @@ jobs:
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        luarocks install lua-path
+        luarocks install luacov-coveralls
         luacov-coveralls

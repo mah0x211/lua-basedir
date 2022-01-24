@@ -58,6 +58,26 @@ print( bd:realpath('empty.txt') );
 ```
 
 
+## apath, err = bd:exists( pathname )
+
+converts the pathname to an absolute path after normalizing it based on the base directory.
+
+**Parameters**
+
+- `pathname:string`: pathname string.
+
+**Returns**
+
+- `apath:string`: absolute filepath on filesystem, or `nil` if it does not exist.
+- `err:string`: error message.
+
+**Example**
+
+```lua
+print( bd:exists('./foo/../bar/../baz/../empty.txt') );
+```
+
+
 ## f, err = bd:open( pathname )
 
 open the specified file.
