@@ -121,6 +121,15 @@ function BaseDir:realpath(rpath)
     return self.basedir .. rpath, rpath
 end
 
+--- exists
+--- @param rpath string
+--- @return string|nil apath
+--- @return string err
+function BaseDir:exists(rpath)
+    rpath = self:realpath(rpath)
+    return exists(rpath)
+end
+
 --- open
 --- @param rpath string
 --- @return file* f
