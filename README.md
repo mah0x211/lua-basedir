@@ -98,6 +98,26 @@ print( bd:tofile('./foo/../bar/../baz/../empty.txt') );
 ```
 
 
+## apath, err = bd:todir( pathname )
+
+converts the pathname to an absolute dirpath after normalizing it based on the base directory.
+
+**Parameters**
+
+- `pathname:string`: pathname string.
+
+**Returns**
+
+- `apath:string`: absolute dirpath on filesystem, or `nil` if it does not exist.
+- `err:string`: error message.
+
+**Example**
+
+```lua
+print( bd:todir('./foo/../bar/../baz/../subdir') );
+```
+
+
 ## f, err = bd:open( pathname )
 
 open the specified file.
