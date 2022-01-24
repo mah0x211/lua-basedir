@@ -37,6 +37,7 @@ local exists = path.exists
 local readdir = path.readdir
 local stat = path.stat
 local extname = path.extname
+local tofile = path.tofile
 local new_regex = require('regex').new
 -- constants
 -- init for libmagic
@@ -128,6 +129,15 @@ end
 function BaseDir:exists(rpath)
     rpath = self:realpath(rpath)
     return exists(rpath)
+end
+
+--- tofile
+--- @param rpath string
+--- @return string|nil apath
+--- @return string err
+function BaseDir:tofile(rpath)
+    rpath = self:realpath(rpath)
+    return tofile(rpath)
 end
 
 --- open
