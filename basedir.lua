@@ -38,7 +38,6 @@ local fstat = require('fstat')
 local opendir = require('opendir')
 local realpath = require('realpath')
 local path = require('path')
-local tofile = path.tofile
 local todir = path.todir
 local new_regex = require('regex').new
 -- constants
@@ -157,8 +156,18 @@ end
 --- @return string|nil apath
 --- @return string err
 function BaseDir:tofile(rpath)
-    rpath = self:realpath(rpath)
-    return tofile(rpath)
+    local apath, err = self:exists(rpath)
+    if err then
+        return nil, err
+    end
+
+    local info
+    info, err = fstat(apath)
+    if err or info.type ~= 'file' then
+        return nil, err
+    end
+
+    return apath
 end
 
 --- todir
