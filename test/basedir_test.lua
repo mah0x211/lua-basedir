@@ -6,7 +6,6 @@ local basedir = require('basedir')
 local TESTDIR = 'test_dir'
 
 function testcase.new()
-
     -- test that create a basedir objrect
     assert(basedir.new(TESTDIR))
 
@@ -15,6 +14,12 @@ function testcase.new()
         {
             arg = {},
             match = 'pathname must be string',
+        },
+        {
+            arg = {
+                'unknown-dir',
+            },
+            match = 'No .+ directory',
         },
         {
             arg = {

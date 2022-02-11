@@ -38,11 +38,11 @@ local fstat = require('fstat')
 local opendir = require('opendir')
 local realpath = require('realpath')
 local path = require('path')
-local exists = path.exists
 local tofile = path.tofile
 local todir = path.todir
 local new_regex = require('regex').new
 -- constants
+local ENOENT = errno.ENOENT
 -- init for libmagic
 local Magic
 do
@@ -83,7 +83,7 @@ function BaseDir:stat(rpath)
     local info, err, eno = fstat(pathname, self.follow_symlinks)
 
     if err then
-        if errno[eno] == errno.ENOENT then
+        if errno[eno] == ENOENT then
             return nil
         end
         return nil, format('failed to stat: %s - %s', apath, err)
@@ -140,7 +140,16 @@ end
 --- @return string err
 function BaseDir:exists(rpath)
     rpath = self:realpath(rpath)
-    return exists(rpath)
+
+    local apath, err, eno = realpath(rpath)
+    if eno then
+        if errno[eno] == ENOENT then
+            return nil
+        end
+        return nil, err
+    end
+
+    return apath
 end
 
 --- tofile
@@ -199,7 +208,7 @@ function BaseDir:readdir(rpath)
 
     -- failed to opendir
     if not dir then
-        if errno[eno] == errno.ENOENT then
+        if errno[eno] == ENOENT then
             return nil
         end
         return nil, format('failed to readdir %s - %s', rpath, err)
@@ -255,11 +264,9 @@ local function new(pathname, opts)
     end
 
     -- check basedir existing
-    local basedir, err = exists(pathname)
+    local basedir, err = realpath(pathname)
     if err then
         error(format('failed to access the pathname %q: %s', pathname, err))
-    elseif not basedir then
-        error(format('failed to access the pathname %q not found', pathname))
     end
 
     -- check type of entry
