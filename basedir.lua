@@ -20,6 +20,7 @@
 -- THE SOFTWARE.
 --
 -- modules
+local assert = assert
 local concat = table.concat
 local format = string.format
 local sub = string.sub
@@ -35,8 +36,8 @@ local getcwd = require('getcwd')
 local mediatypes = require('mediatypes')
 local fstat = require('fstat')
 local opendir = require('opendir')
+local realpath = require('realpath')
 local path = require('path')
-local normalize = path.normalize
 local exists = path.exists
 local tofile = path.tofile
 local todir = path.todir
@@ -113,6 +114,15 @@ function BaseDir:stat(rpath)
         ctime = info.ctime,
         mtime = info.mtime,
     }
+end
+
+--- normalize
+--- @vararg string
+--- @return string
+local function normalize(...)
+    return assert(realpath('/' .. concat({
+        ...,
+    }, '/'), nil, false))
 end
 
 --- realpath
