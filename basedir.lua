@@ -20,27 +20,26 @@
 -- THE SOFTWARE.
 --
 -- modules
+local assert = assert
 local concat = table.concat
-local error = error
 local format = string.format
 local sub = string.sub
 local open = io.open
+local error = require('error')
+local errno = error.errno
 local isa = require('isa')
 local is_boolean = isa.boolean
 local is_string = isa.string
 local is_table = isa.table
+local extname = require('extname')
 local getcwd = require('getcwd')
 local mediatypes = require('mediatypes')
-local path = require('path')
-local normalize = path.normalize
-local exists = path.exists
-local readdir = path.readdir
-local stat = path.stat
-local extname = path.extname
-local tofile = path.tofile
-local todir = path.todir
+local fstat = require('fstat')
+local opendir = require('opendir')
+local realpath = require('realpath')
 local new_regex = require('regex').new
 -- constants
+local ENOENT = errno.ENOENT
 -- init for libmagic
 local Magic
 do
@@ -78,21 +77,21 @@ BaseDir.__index = BaseDir
 function BaseDir:stat(rpath)
     -- convert relative-path to absolute-path
     local pathname, apath = self:realpath(rpath)
-    local info, err = stat(pathname, self.follow_symlinks)
+    local info, err, eno = fstat(pathname, self.follow_symlinks)
 
-    if not info then
-        if err then
-            return nil, format('failed to stat: %s - %s', apath, err)
+    if err then
+        if errno[eno] == ENOENT then
+            return nil
         end
-        return nil
+        return nil, format('failed to stat: %s - %s', apath, err)
     end
 
     -- regular file
-    if info.type == 'reg' then
+    if info.type == 'file' then
         local ext = extname(apath)
 
         return {
-            ['type'] = info.type,
+            type = info.type,
             pathname = pathname,
             rpath = apath,
             size = info.size,
@@ -106,12 +105,21 @@ function BaseDir:stat(rpath)
 
     -- other
     return {
-        ['type'] = info.type,
+        type = info.type,
         pathname = pathname,
         rpath = apath,
         ctime = info.ctime,
         mtime = info.mtime,
     }
+end
+
+--- normalize
+--- @vararg string
+--- @return string
+local function normalize(...)
+    return assert(realpath('/' .. concat({
+        ...,
+    }, '/'), nil, false))
 end
 
 --- realpath
@@ -129,7 +137,16 @@ end
 --- @return string err
 function BaseDir:exists(rpath)
     rpath = self:realpath(rpath)
-    return exists(rpath)
+
+    local apath, err, eno = realpath(rpath)
+    if eno then
+        if errno[eno] == ENOENT then
+            return nil
+        end
+        return nil, err
+    end
+
+    return apath
 end
 
 --- tofile
@@ -137,8 +154,18 @@ end
 --- @return string|nil apath
 --- @return string err
 function BaseDir:tofile(rpath)
-    rpath = self:realpath(rpath)
-    return tofile(rpath)
+    local apath, err = self:exists(rpath)
+    if err then
+        return nil, err
+    end
+
+    local info
+    info, err = fstat(apath)
+    if err or info.type ~= 'file' then
+        return nil, err
+    end
+
+    return apath
 end
 
 --- todir
@@ -146,8 +173,18 @@ end
 --- @return string|nil apath
 --- @return string err
 function BaseDir:todir(rpath)
-    rpath = self:realpath(rpath)
-    return todir(rpath)
+    local apath, err = self:exists(rpath)
+    if err then
+        return nil, err
+    end
+
+    local info
+    info, err = fstat(apath)
+    if err or info.type ~= 'directory' then
+        return nil, err
+    end
+
+    return apath
 end
 
 --- open
@@ -184,26 +221,28 @@ end
 --- @return string err
 function BaseDir:readdir(rpath)
     local pathname, dirpath = self:realpath(rpath)
-    local entries, derr = readdir(pathname)
+    local dir, err, eno = opendir(pathname)
 
-    -- failed to readdir
-    if not entries then
-        if derr then
-            return nil, format('failed to readdir %s - %s', rpath, derr)
+    -- failed to opendir
+    if not dir then
+        if errno[eno] == ENOENT then
+            return nil
         end
-        return nil
+        return nil, format('failed to readdir %s - %s', rpath, err)
     end
 
     local list = {}
-    for i = 1, #entries do
+    local entry
+    entry, err = dir:readdir()
+    while entry do
         -- not ignoring files
-        if not self.re_ignore:match(entries[i]) then
-            local entry = entries[i]
-            local info, err = self:stat(normalize(dirpath, entry))
+        if not self.re_ignore:match(entry) then
+            local info
+            info, err = self:stat(normalize(dirpath, entry))
 
             -- failed to get stat
             if err then
-                return nil, err
+                return nil, format('failed to readdir %s - %s', rpath, err)
             end
 
             local stats = list[info.type]
@@ -218,6 +257,12 @@ function BaseDir:readdir(rpath)
             -- add entry field
             info.entry = entry
         end
+        entry, err = dir:readdir()
+    end
+    dir:closedir()
+    -- failed to readdir
+    if err then
+        return nil, format('failed to readdir %s - %s', rpath, err)
     end
 
     return list
@@ -236,18 +281,16 @@ local function new(pathname, opts)
     end
 
     -- check basedir existing
-    local basedir, err = exists(pathname)
+    local basedir, err = realpath(pathname)
     if err then
         error(format('failed to access the pathname %q: %s', pathname, err))
-    elseif not basedir then
-        error(format('failed to access the pathname %q not found', pathname))
     end
 
     -- check type of entry
-    local info, serr = stat(basedir)
+    local info, serr = fstat(basedir)
     if serr then
         error(format('failed to get info %q: %s', pathname, serr))
-    elseif info.type ~= 'dir' then
+    elseif info.type ~= 'directory' then
         error(format('pathname %q is not directory', pathname))
     end
 

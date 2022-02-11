@@ -6,7 +6,6 @@ local basedir = require('basedir')
 local TESTDIR = 'test_dir'
 
 function testcase.new()
-
     -- test that create a basedir objrect
     assert(basedir.new(TESTDIR))
 
@@ -15,6 +14,12 @@ function testcase.new()
         {
             arg = {},
             match = 'pathname must be string',
+        },
+        {
+            arg = {
+                'unknown-dir',
+            },
+            match = 'No .+ directory',
         },
         {
             arg = {
@@ -126,18 +131,18 @@ function testcase.readdir()
         ['empty.txt'] = true,
         ['hello.txt'] = true,
     }
-    for _, stat in ipairs(entries.reg) do
+    for _, stat in ipairs(entries.file) do
         assert(files[stat.entry], string.format('unknown entry: %s', stat.rpath))
         files[stat.entry] = nil
     end
     assert.empty(files)
 
     -- confirm that contains 'subdir'
-    assert.equal(#entries.dir, 1)
+    assert.equal(#entries.directory, 1)
     local dirs = {
         ['subdir'] = true,
     };
-    for _, stat in ipairs(entries.dir) do
+    for _, stat in ipairs(entries.directory) do
         assert(dirs[stat.entry], string.format('unknown entry: %s', stat.rpath))
         dirs[stat.entry] = nil;
     end
@@ -207,7 +212,7 @@ function testcase.stat()
         assert(info[k], string.format('field %q is not defined', k))
     end
     -- confirm field value
-    assert.equal(info.type, 'reg')
+    assert.equal(info.type, 'file')
     assert.equal(info.ext, '.txt')
     assert.equal(info.mime, 'text/plain')
     assert.equal(info.rpath, '/empty.txt')
