@@ -27,46 +27,17 @@ local sub = string.sub
 local open = io.open
 local error = require('error')
 local errno = error.errno
-local isa = require('isa')
-local is_boolean = isa.boolean
-local is_string = isa.string
-local is_table = isa.table
 local extname = require('extname')
 local getcwd = require('getcwd')
-local mediatypes = require('mediatypes')
 local fstat = require('fstat')
 local opendir = require('opendir')
 local realpath = require('realpath')
-local new_regex = require('regex').new
 -- constants
 local ENOENT = errno.ENOENT
--- init for libmagic
-local Magic
-do
-    local libmagic = require('libmagic')
-    Magic = libmagic.open(libmagic.MIME_ENCODING, libmagic.NO_CHECK_COMPRESS,
-                          libmagic.SYMLINK)
-    Magic:load()
-end
-
---- get_charset
----@param pathname string
----@return string charset
-local function get_charset(pathname)
-    return Magic:file(pathname)
-end
-
---- @class mediatypes
---- @field getmime function
-
---- @class regexp
---- @field match function
 
 --- @class BaseDir
 --- @field basedir string
 --- @field follow_symlinks boolean
---- @field mime mediatypes
---- @field re_ignore regexp
 local BaseDir = {}
 BaseDir.__index = BaseDir
 
@@ -98,8 +69,6 @@ function BaseDir:stat(rpath)
             ctime = info.ctime,
             mtime = info.mtime,
             ext = ext,
-            charset = get_charset(pathname),
-            mime = ext and self.mime:getmime(ext:gsub('^.', '')),
         }
     end
 
@@ -217,10 +186,10 @@ end
 
 --- readdir
 --- @param rpath string
---- @return table<string, table[]> entries
+--- @return string[] entries
 --- @return string err
 function BaseDir:readdir(rpath)
-    local pathname, dirpath = self:realpath(rpath)
+    local pathname = self:realpath(rpath)
     local dir, err, eno = opendir(pathname)
 
     -- failed to opendir
@@ -235,27 +204,9 @@ function BaseDir:readdir(rpath)
     local entry
     entry, err = dir:readdir()
     while entry do
-        -- not ignoring files
-        if not self.re_ignore:match(entry) then
-            local info
-            info, err = self:stat(normalize(dirpath, entry))
-
-            -- failed to get stat
-            if err then
-                return nil, format('failed to readdir %s - %s', rpath, err)
-            end
-
-            local stats = list[info.type]
-            if not stats then
-                stats = {}
-                list[info.type] = stats
-            end
-            stats[#stats + 1] = info
-
-            -- remove type field
-            info.type = nil
-            -- add entry field
-            info.entry = entry
+        -- ignore '.' and '..' entries
+        if entry ~= '.' and entry ~= '..' then
+            list[#list + 1] = entry
         end
         entry, err = dir:readdir()
     end
@@ -270,87 +221,44 @@ end
 
 --- new
 --- @param pathname string
---- @param opts table
+--- @param follow_symlink boolean
 --- @return BaseDir
-local function new(pathname, opts)
-    if not is_string(pathname) then
+local function new(pathname, follow_symlink)
+    if type(pathname) ~= 'string' then
         error('pathname must be string')
-    elseif sub(pathname, 1, 1) ~= '/' then
-        -- change relative-path to absolute-path
-        pathname = normalize(getcwd(), pathname)
+    elseif follow_symlink ~= nil and type(follow_symlink) ~= 'boolean' then
+        error('follow_symlink must be boolean')
     end
 
-    -- check basedir existing
-    local basedir, err = realpath(pathname)
-    if err then
-        error(format('failed to access the pathname %q: %s', pathname, err))
+    local basedir = pathname
+    if sub(basedir, 1, 1) ~= '/' then
+        -- prepend current working direcotry
+        basedir = getcwd() .. '/' .. basedir
+    end
+
+    -- normalize
+    basedir = assert(realpath(basedir, nil, false))
+    -- resolve pathname
+    follow_symlink = follow_symlink == true
+    if follow_symlink then
+        local err
+        basedir, err = realpath(basedir)
+        if err then
+            error(format('failed to access the pathname %q: %s', pathname, err))
+        end
     end
 
     -- check type of entry
-    local info, serr = fstat(basedir)
-    if serr then
-        error(format('failed to get info %q: %s', pathname, serr))
-    elseif info.type ~= 'directory' then
+    local stat, err = fstat(basedir, follow_symlink)
+    if err then
+        error(format('failed to get stat %q: %s', pathname, err))
+    elseif stat.type ~= 'directory' then
         error(format('pathname %q is not directory', pathname))
-    end
-
-    -- check opts
-    opts = opts or {}
-    if not is_table(opts) then
-        error('opts must be table')
-    end
-
-    -- mediatypes
-    if opts.mimetypes ~= nil and not is_string(opts.mimetypes) then
-        error('opts.mimetypes must be string')
-    end
-    local mime = mediatypes.new(opts.mimetypes)
-
-    -- follow symlinks option
-    if opts.follow_symlinks ~= nil and not is_boolean(opts.follow_symlinks) then
-        error('opts.follow_symlinks must be boolean')
-    end
-    local follow_symlinks = opts.follow_symlinks == true
-
-    -- set ignoreRegex list
-    local ignore = {
-        -- default ignore pattern
-        '^[.].*$',
-    }
-    if opts.ignore ~= nil then
-        if not is_table(opts.ignore) then
-            error('opts.ignore must be table')
-        end
-
-        for i, pattern in ipairs(opts.ignore) do
-            if not is_string(pattern) then
-                error(format('opts.ignore#%d pattern must be string', i))
-            end
-
-            -- evalulate
-            local _, perr = new_regex(pattern, 'i')
-            if perr then
-                error(format('opts.ignore#%d pattern cannot be compiled: %s', i,
-                             perr))
-            end
-
-            ignore[#ignore + 1] = pattern
-        end
-    end
-    -- compile patterns
-    local pattern = '(?:' .. concat(ignore, '|') .. ')'
-    local re_ignore, perr = new_regex(pattern, 'i')
-    if perr then
-        error(format('opts.ignore: %q - %s', pattern, perr))
     end
 
     return setmetatable({
         basedir = basedir,
-        follow_symlinks = follow_symlinks,
-        mime = mime,
-        ignore = ignore,
-        re_pattern = pattern,
-        re_ignore = re_ignore,
+        follow_symlink = follow_symlink,
     }, BaseDir)
 end
 
