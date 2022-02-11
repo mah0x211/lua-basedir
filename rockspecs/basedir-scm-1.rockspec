@@ -19,7 +19,6 @@ dependencies = {
     "mediatypes >= 2.0.1",
     "libmagic >= 5.41",
     "opendir >= 0.1.0",
-    "path >= 1.1.0",
     "realpath >= 0.2.0",
     "regex >= 0.1.0",
 }

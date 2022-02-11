@@ -37,8 +37,6 @@ local mediatypes = require('mediatypes')
 local fstat = require('fstat')
 local opendir = require('opendir')
 local realpath = require('realpath')
-local path = require('path')
-local todir = path.todir
 local new_regex = require('regex').new
 -- constants
 local ENOENT = errno.ENOENT
@@ -175,8 +173,18 @@ end
 --- @return string|nil apath
 --- @return string err
 function BaseDir:todir(rpath)
-    rpath = self:realpath(rpath)
-    return todir(rpath)
+    local apath, err = self:exists(rpath)
+    if err then
+        return nil, err
+    end
+
+    local info
+    info, err = fstat(apath)
+    if err or info.type ~= 'directory' then
+        return nil, err
+    end
+
+    return apath
 end
 
 --- open
