@@ -21,21 +21,22 @@
 --
 -- modules
 local concat = table.concat
-local error = error
 local format = string.format
 local sub = string.sub
 local open = io.open
+local error = require('error')
+local errno = error.errno
 local isa = require('isa')
 local is_boolean = isa.boolean
 local is_string = isa.string
 local is_table = isa.table
 local getcwd = require('getcwd')
 local mediatypes = require('mediatypes')
+local fstat = require('fstat')
 local path = require('path')
 local normalize = path.normalize
 local exists = path.exists
 local readdir = path.readdir
-local stat = path.stat
 local extname = path.extname
 local tofile = path.tofile
 local todir = path.todir
@@ -78,21 +79,21 @@ BaseDir.__index = BaseDir
 function BaseDir:stat(rpath)
     -- convert relative-path to absolute-path
     local pathname, apath = self:realpath(rpath)
-    local info, err = stat(pathname, self.follow_symlinks)
+    local info, err, eno = fstat(pathname, self.follow_symlinks)
 
-    if not info then
-        if err then
-            return nil, format('failed to stat: %s - %s', apath, err)
+    if err then
+        if errno[eno] == errno.ENOENT then
+            return nil
         end
-        return nil
+        return nil, format('failed to stat: %s - %s', apath, err)
     end
 
     -- regular file
-    if info.type == 'reg' then
+    if info.type == 'file' then
         local ext = extname(apath)
 
         return {
-            ['type'] = info.type,
+            type = info.type,
             pathname = pathname,
             rpath = apath,
             size = info.size,
@@ -106,7 +107,7 @@ function BaseDir:stat(rpath)
 
     -- other
     return {
-        ['type'] = info.type,
+        type = info.type,
         pathname = pathname,
         rpath = apath,
         ctime = info.ctime,
@@ -244,10 +245,10 @@ local function new(pathname, opts)
     end
 
     -- check type of entry
-    local info, serr = stat(basedir)
+    local info, serr = fstat(basedir)
     if serr then
         error(format('failed to get info %q: %s', pathname, serr))
-    elseif info.type ~= 'dir' then
+    elseif info.type ~= 'directory' then
         error(format('pathname %q is not directory', pathname))
     end
 
