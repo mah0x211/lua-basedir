@@ -33,10 +33,10 @@ local is_table = isa.table
 local getcwd = require('getcwd')
 local mediatypes = require('mediatypes')
 local fstat = require('fstat')
+local opendir = require('opendir')
 local path = require('path')
 local normalize = path.normalize
 local exists = path.exists
-local readdir = path.readdir
 local extname = path.extname
 local tofile = path.tofile
 local todir = path.todir
@@ -185,26 +185,28 @@ end
 --- @return string err
 function BaseDir:readdir(rpath)
     local pathname, dirpath = self:realpath(rpath)
-    local entries, derr = readdir(pathname)
+    local dir, err, eno = opendir(pathname)
 
-    -- failed to readdir
-    if not entries then
-        if derr then
-            return nil, format('failed to readdir %s - %s', rpath, derr)
+    -- failed to opendir
+    if not dir then
+        if errno[eno] == errno.ENOENT then
+            return nil
         end
-        return nil
+        return nil, format('failed to readdir %s - %s', rpath, err)
     end
 
     local list = {}
-    for i = 1, #entries do
+    local entry
+    entry, err = dir:readdir()
+    while entry do
         -- not ignoring files
-        if not self.re_ignore:match(entries[i]) then
-            local entry = entries[i]
-            local info, err = self:stat(normalize(dirpath, entry))
+        if not self.re_ignore:match(entry) then
+            local info
+            info, err = self:stat(normalize(dirpath, entry))
 
             -- failed to get stat
             if err then
-                return nil, err
+                return nil, format('failed to readdir %s - %s', rpath, err)
             end
 
             local stats = list[info.type]
@@ -219,6 +221,12 @@ function BaseDir:readdir(rpath)
             -- add entry field
             info.entry = entry
         end
+        entry, err = dir:readdir()
+    end
+    dir:closedir()
+    -- failed to readdir
+    if err then
+        return nil, format('failed to readdir %s - %s', rpath, err)
     end
 
     return list
