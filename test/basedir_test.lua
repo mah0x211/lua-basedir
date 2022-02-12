@@ -70,6 +70,21 @@ function testcase.read()
     assert.match(err, 'No .+ file or directory', false)
 end
 
+function testcase.opendir()
+    local r = basedir.new(TESTDIR)
+
+    -- test that read entries
+    local dir, err = r:opendir('/')
+    assert.is_nil(err)
+    assert.match(tostring(dir), 'dir*:')
+    dir:closedir()
+
+    -- test that returns nil if it does not exist
+    dir, err = r:opendir('/noent')
+    assert.is_nil(dir)
+    assert.is_nil(err)
+end
+
 function testcase.readdir()
     local r = basedir.new(TESTDIR)
 
@@ -92,7 +107,7 @@ function testcase.readdir()
     -- test that returns nil if it does not exist
     entries, err = r:readdir('/noent')
     assert.is_nil(entries)
-    assert.is_nil(err, 'foo')
+    assert.is_nil(err)
 end
 
 function testcase.realpath()

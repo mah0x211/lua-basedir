@@ -184,11 +184,11 @@ function BaseDir:read(rpath)
     return src
 end
 
---- readdir
+--- opendir
 --- @param rpath string
---- @return string[] entries
+--- @return userdata dir
 --- @return string err
-function BaseDir:readdir(rpath)
+function BaseDir:opendir(rpath)
     local pathname = self:realpath(rpath)
     local dir, err, eno = opendir(pathname)
 
@@ -197,7 +197,20 @@ function BaseDir:readdir(rpath)
         if errno[eno] == ENOENT then
             return nil
         end
-        return nil, format('failed to readdir %s - %s', rpath, err)
+        return nil, format('failed to opendir %s: %s', rpath, err)
+    end
+
+    return dir
+end
+
+--- readdir
+--- @param rpath string
+--- @return string[] entries
+--- @return string err
+function BaseDir:readdir(rpath)
+    local dir, err = self:opendir(rpath)
+    if not dir then
+        return nil, err
     end
 
     local list = {}
