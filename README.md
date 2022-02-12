@@ -170,6 +170,20 @@ print(str)
 ```
 
 
+## dir, err = basedir:opendir( pathname )
+
+open a [directory stream](https://github.com/mah0x211/lua-opendir).
+
+**Parameters**
+
+- `pathname:string`: pathname string.
+
+**Returns**
+
+- `dir:dir*`: a directory stream.
+- `err:string`: error message.
+
+
 ## entries, err = basedir:readdir( pathname )
 
 returns a directory contents of pathname.
