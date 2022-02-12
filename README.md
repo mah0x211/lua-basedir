@@ -13,17 +13,14 @@ luarocks install basedir
 ```
 
 
-## bd = basedir.new( pathname [, opts] )
+## bd = basedir.new( pathname [, follow_symlink] )
 
 create a basedir object.
 
 **Parameters**
 
 - `pathname:string`: pathname of the base directory
-- `opts:table`
-    - `follow_symlinks:boolean`: following symbolic link if true. (default: `false`)
-    - `ignore:table`: regular expressions for ignore filename. (default: `{ '^[.].*$' }`)
-    - `mimetypes:string`: mime types definition string. (default: `mediatype.default`)
+- `follow_symlink:boolean`: follow symbolic links. (default: `false`)
 
 
 **Returns**
@@ -38,7 +35,7 @@ local bd = basedir.new('test_dir')
 ```
 
 
-## apath, rpath = bd:realpath( pathname )
+## apath, rpath = basedir:realpath( pathname )
 
 converts the pathname to an absolute path after normalizing it based on the base directory.
 
@@ -54,11 +51,13 @@ converts the pathname to an absolute path after normalizing it based on the base
 **Example**
 
 ```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
 print( bd:realpath('empty.txt') );
 ```
 
 
-## apath, err = bd:exists( pathname )
+## apath, err = basedir:exists( pathname )
 
 converts the pathname to an absolute path after normalizing it based on the base directory.
 
@@ -74,11 +73,13 @@ converts the pathname to an absolute path after normalizing it based on the base
 **Example**
 
 ```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
 print( bd:exists('./foo/../bar/../baz/../empty.txt') );
 ```
 
 
-## apath, err = bd:tofile( pathname )
+## apath, err = basedir:tofile( pathname )
 
 converts the pathname to an absolute filepath after normalizing it based on the base directory.
 
@@ -94,11 +95,13 @@ converts the pathname to an absolute filepath after normalizing it based on the 
 **Example**
 
 ```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
 print( bd:tofile('./foo/../bar/../baz/../empty.txt') );
 ```
 
 
-## apath, err = bd:todir( pathname )
+## apath, err = basedir:todir( pathname )
 
 converts the pathname to an absolute dirpath after normalizing it based on the base directory.
 
@@ -114,11 +117,13 @@ converts the pathname to an absolute dirpath after normalizing it based on the b
 **Example**
 
 ```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
 print( bd:todir('./foo/../bar/../baz/../subdir') );
 ```
 
 
-## f, err = bd:open( pathname )
+## f, err = basedir:open( pathname )
 
 open the specified file.
 
@@ -134,13 +139,15 @@ open the specified file.
 **Example**
 
 ```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
 local f = assert(bd:open('subdir/world.txt'))
 print(f:read('*a'))
 f:close()
 ```
 
 
-## str, err = bd:read( pathname )
+## str, err = basedir:read( pathname )
 
 reads the contents of the specified file.
 
@@ -156,12 +163,14 @@ reads the contents of the specified file.
 **Example**
 
 ```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
 local str = assert(bd:read('subdir/world.txt'))
 print(str)
 ```
 
 
-## entries, err = bd:readdir( pathname )
+## entries, err = basedir:readdir( pathname )
 
 returns a directory contents of pathname.
 
@@ -171,11 +180,11 @@ returns a directory contents of pathname.
 
 **Returns**
 
-- `entries:table`: `nil` on failure or not found.
+- `entries:string[]`: `nil` on failure or not found.
 - `err:string`: error message.
 
 
-## info, err = bd:stat( pathname )
+## info, err = basedir:stat( pathname )
 
 obtains information about the file pointed to the specified pathname.
 

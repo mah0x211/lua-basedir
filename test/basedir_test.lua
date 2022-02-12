@@ -23,66 +23,16 @@ function testcase.new()
         },
         {
             arg = {
+                TESTDIR .. '/hello.txt',
+            },
+            match = 'is not directory',
+        },
+        {
+            arg = {
                 TESTDIR,
                 '',
             },
-            match = 'opts must be table',
-        },
-        {
-            arg = {
-                TESTDIR,
-                {
-                    mimetypes = 1,
-                },
-            },
-            match = 'opts.mimetypes must be string',
-        },
-        {
-            arg = {
-                TESTDIR,
-                {
-                    mimetypes = '',
-                    follow_symlinks = 1,
-                },
-            },
-            match = 'opts.follow_symlinks must be boolean',
-        },
-        {
-            arg = {
-                TESTDIR,
-                {
-                    mimetypes = '',
-                    follow_symlinks = false,
-                    ignore = true,
-                },
-            },
-            match = 'opts.ignore must be table',
-        },
-        {
-            arg = {
-                TESTDIR,
-                {
-                    mimetypes = '',
-                    follow_symlinks = false,
-                    ignore = {
-                        1,
-                    },
-                },
-            },
-            match = 'opts.ignore#1 pattern must be string',
-        },
-        {
-            arg = {
-                TESTDIR,
-                {
-                    mimetypes = '',
-                    follow_symlinks = false,
-                    ignore = {
-                        '||[',
-                    },
-                },
-            },
-            match = 'opts.ignore#1 pattern cannot be compiled',
+            match = 'follow_symlink must be boolean',
         },
     }) do
         local err = assert.throws(basedir.new, unpack(v.arg))
@@ -128,25 +78,16 @@ function testcase.readdir()
     assert.is_nil(err)
     -- confirm that contains 'empty.txt' and 'hello.txt'
     local files = {
+        ['subdir'] = true,
         ['empty.txt'] = true,
         ['hello.txt'] = true,
     }
-    for _, stat in ipairs(entries.file) do
-        assert(files[stat.entry], string.format('unknown entry: %s', stat.rpath))
-        files[stat.entry] = nil
+    for _, entry in ipairs(entries) do
+        assert.not_empty(files)
+        assert(files[entry], string.format('unknown entry: %s', entry))
+        files[entry] = nil
     end
     assert.empty(files)
-
-    -- confirm that contains 'subdir'
-    assert.equal(#entries.directory, 1)
-    local dirs = {
-        ['subdir'] = true,
-    };
-    for _, stat in ipairs(entries.directory) do
-        assert(dirs[stat.entry], string.format('unknown entry: %s', stat.rpath))
-        dirs[stat.entry] = nil;
-    end
-    assert.empty(dirs)
 
     -- test that returns nil if it does not exist
     entries, err = r:readdir('/noent')
@@ -200,10 +141,8 @@ function testcase.stat()
     assert.is_nil(err)
     -- confirm field definitions
     for _, k in pairs({
-        'charset',
         'ctime',
         'ext',
-        'mime',
         'mtime',
         'pathname',
         'rpath',
@@ -214,7 +153,6 @@ function testcase.stat()
     -- confirm field value
     assert.equal(info.type, 'file')
     assert.equal(info.ext, '.txt')
-    assert.equal(info.mime, 'text/plain')
     assert.equal(info.rpath, '/empty.txt')
     assert.match(info.pathname, '/test_dir/empty.txt$', false)
 

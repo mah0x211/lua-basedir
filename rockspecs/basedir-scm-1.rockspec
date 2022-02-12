@@ -16,11 +16,8 @@ dependencies = {
     "extname >= 0.1.0",
     "fstat >= 0.1.0",
     "getcwd >= 0.1.0",
-    "mediatypes >= 2.0.1",
-    "libmagic >= 5.41",
     "opendir >= 0.1.0",
     "realpath >= 0.2.0",
-    "regex >= 0.1.0",
 }
 build = {
     type = "builtin",
