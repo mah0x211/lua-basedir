@@ -98,14 +98,6 @@ function BaseDir:stat(pathname)
     return stat
 end
 
---- exists
---- @param pathname string
---- @return string|nil apath
---- @return string err
-function BaseDir:exists(pathname)
-    return self:realpath(pathname)
-end
-
 --- tofile
 --- @param pathname string
 --- @return string|nil apath
