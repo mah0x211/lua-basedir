@@ -1,0 +1,5 @@
+local dump = require('dump')
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
+local stat = assert(bd:stat('empty.txt'))
+print(dump(stat))
