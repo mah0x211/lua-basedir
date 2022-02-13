@@ -40,6 +40,106 @@ function testcase.new()
     end
 end
 
+function testcase.normalize()
+    local r = basedir.new(TESTDIR)
+
+    -- test that converts pathname to absolute path in the base directory
+    local pathname = r:normalize('./foo/../bar/../baz/qux/../empty.txt')
+    assert.equal(pathname, '/baz/empty.txt')
+end
+
+function testcase.realpath()
+    local r = basedir.new(TESTDIR)
+
+    -- test that converts relative path to absolute path based on base directory
+    for _, v in ipairs({
+        {
+            pathname = './foo/../bar/../baz/qux/../../empty.txt',
+            match_apath = TESTDIR .. '/empty%.txt$',
+            equal_rpath = '/empty.txt',
+        },
+        {
+            pathname = '/',
+            match_apath = TESTDIR,
+            equal_rpath = '/',
+        },
+    }) do
+        local apath, err, rpath = r:realpath(v.pathname)
+        assert(apath, err)
+        assert.match(apath, v.match_apath, false)
+        assert.equal(rpath, v.equal_rpath)
+    end
+
+    -- test that return nil if pathname is links to the outside of base directory
+    local apath, err, rpath = r:realpath('./subdir/example.lua')
+    assert.is_nil(apath)
+    assert.is_nil(err)
+    assert.is_nil(rpath)
+
+    -- test that resolved pathname if follow_symlink option is true
+    r = basedir.new(TESTDIR, true)
+    apath, err, rpath = r:realpath('./subdir/example.lua')
+    assert(apath, err)
+    assert.match(apath, 'test/example%.lua$', false)
+    assert.equal(rpath, '/subdir/example.lua')
+end
+
+function testcase.stat()
+    local r = basedir.new(TESTDIR)
+
+    -- test that get stat of file
+    local info, err = r:stat('empty.txt')
+    assert.is_nil(err)
+    -- confirm field definitions
+    for _, k in pairs({
+        'ctime',
+        'mtime',
+        'pathname',
+        'rpath',
+        'type',
+    }) do
+        assert(info[k], string.format('field %q is not defined', k))
+    end
+    -- confirm field value
+    assert.equal(info.type, 'file')
+    assert.equal(info.rpath, '/empty.txt')
+    assert.match(info.pathname, '/test_dir/empty.txt$', false)
+
+    -- test that return nil if it does not exist
+    info, err = r:stat('empty.txta')
+    assert.is_nil(info)
+    assert.is_nil(err)
+end
+
+function testcase.exists()
+    local r = basedir.new(TESTDIR)
+
+    -- test that returns the absolute path on filesystem if the pathname exists
+    for rpath, pattern in pairs({
+        ['./foo/../bar/../empty.txt'] = '/empty.txt$',
+        ['./foo/../bar/../subdir'] = '/subdir$',
+    }) do
+        local pathname = assert(r:exists(rpath))
+        assert.match(pathname, TESTDIR .. pattern, false)
+    end
+end
+
+function testcase.tofile()
+    local r = basedir.new(TESTDIR)
+
+    -- test that returns the absolute pathname on filesystem if the file exists
+    local pathname = assert(r:tofile('./foo/../bar/../empty.txt'))
+    assert.match(pathname, TESTDIR .. '/empty.txt$', false)
+end
+
+function testcase.todir()
+    local r = basedir.new(TESTDIR)
+
+    -- test that returns the absolute pathname on filesystem if the directory exists
+    local pathname = assert(r:todir('./foo/../bar/../subdir'))
+    assert.match(pathname, TESTDIR .. '/subdir$', false)
+end
+
 function testcase.open()
     local r = basedir.new(TESTDIR)
 
@@ -53,7 +153,7 @@ function testcase.open()
     -- test that cannot open a file if it does not exist
     f, err = r:open('foo/bar/unknown/file')
     assert.is_nil(f)
-    assert.match(err, 'No .+ file or directory', false)
+    assert.is_nil(err)
 end
 
 function testcase.read()
@@ -67,7 +167,7 @@ function testcase.read()
     -- test that cannot read file content if it does not exist
     content, err = r:read('/unknown.txt')
     assert.is_nil(content)
-    assert.match(err, 'No .+ file or directory', false)
+    assert.is_nil(err)
 end
 
 function testcase.opendir()
@@ -107,72 +207,5 @@ function testcase.readdir()
     -- test that returns nil if it does not exist
     entries, err = r:readdir('/noent')
     assert.is_nil(entries)
-    assert.is_nil(err)
-end
-
-function testcase.realpath()
-    local r = basedir.new(TESTDIR)
-
-    -- test that converts relative path to absolute path based on base directory
-    local pathname, apath = r:realpath('./foo/../bar/../baz/qux/../empty.txt')
-    assert.match(pathname, TESTDIR .. '/baz/empty.txt$', false)
-    assert.equal(apath, '/baz/empty.txt')
-end
-
-function testcase.exists()
-    local r = basedir.new(TESTDIR)
-
-    -- test that returns the absolute path on filesystem if the pathname exists
-    for rpath, pattern in pairs({
-        ['./foo/../bar/../empty.txt'] = '/empty.txt$',
-        ['./foo/../bar/../subdir'] = '/subdir$',
-    }) do
-        local pathname = assert(r:exists(rpath))
-        assert.match(pathname, TESTDIR .. pattern, false)
-    end
-end
-
-function testcase.tofile()
-    local r = basedir.new(TESTDIR)
-
-    -- test that returns the absolute pathname on filesystem if the file exists
-    local pathname = assert(r:tofile('./foo/../bar/../empty.txt'))
-    assert.match(pathname, TESTDIR .. '/empty.txt$', false)
-end
-
-function testcase.todir()
-    local r = basedir.new(TESTDIR)
-
-    -- test that returns the absolute pathname on filesystem if the directory exists
-    local pathname = assert(r:todir('./foo/../bar/../subdir'))
-    assert.match(pathname, TESTDIR .. '/subdir$', false)
-end
-
-function testcase.stat()
-    local r = basedir.new(TESTDIR)
-
-    -- test that get stat of file
-    local info, err = r:stat('empty.txt')
-    assert.is_nil(err)
-    -- confirm field definitions
-    for _, k in pairs({
-        'ctime',
-        'ext',
-        'mtime',
-        'pathname',
-        'rpath',
-        'type',
-    }) do
-        assert(info[k], string.format('field %q is not defined', k))
-    end
-    -- confirm field value
-    assert.equal(info.type, 'file')
-    assert.equal(info.ext, '.txt')
-    assert.equal(info.rpath, '/empty.txt')
-    assert.match(info.pathname, '/test_dir/empty.txt$', false)
-
-    -- test that return nil if it does not exist
-    info, err = r:stat('empty.txta')
-    assert.is_nil(info)
     assert.is_nil(err)
 end

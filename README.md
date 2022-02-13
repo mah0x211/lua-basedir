@@ -35,9 +35,9 @@ local bd = basedir.new('test_dir')
 ```
 
 
-## apath, rpath = basedir:realpath( pathname )
+## rpath = basedir:normalize( pathname )
 
-converts the pathname to an absolute path after normalizing it based on the base directory.
+converts a pathname to an absolute path in the base directory.
 
 **Parameters**
 
@@ -45,15 +45,78 @@ converts the pathname to an absolute path after normalizing it based on the base
 
 **Returns**
 
-- `apath:string`: absolute pathname on filesystem.
-- `rpath:string`: normalized pathname.
+- `rpath:string`: an absolute path in the base directory.
 
 **Example**
 
 ```lua
 local basedir = require('basedir')
 local bd = basedir.new('test_dir')
-print( bd:realpath('empty.txt') );
+print(bd:normalize('/foo/../bar/../empty.txt'))
+```
+
+
+## apath, err, rpath = basedir:realpath( pathname )
+
+converts a pathname to an absolute path in the filesystem and in the base directory.
+
+
+**Parameters**
+
+- `pathname:string`: pathname string.
+
+**Returns**
+
+- `apath:string`: an absolute path in the filesystem.
+- `err:string`: error message.
+- `rpath:string`: an absolute path in the base directory.
+
+**Example**
+
+```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
+print(bd:realpath('empty.txt'))
+```
+
+
+## stat, err = basedir:stat( pathname )
+
+obtains information about the file pointed to the specified pathname.
+
+**Parameters**
+
+- `pathname:string`: pathname string.
+
+**Returns**
+
+- `stat:table`: `nil` on failure or not found.
+- `err:string`: error message.
+
+```lua
+local dump = require('dump')
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
+local stat = assert(bd:stat('empty.txt'))
+-- above code will be output as follows
+-- {
+--     atime = 1644544401,
+--     blksize = 4096,
+--     blocks = 0,
+--     ctime = 1644544401,
+--     dev = 16777220,
+--     gid = 20,
+--     ino = 12945838645,
+--     mode = 33188,
+--     mtime = 1644544401,
+--     nlink = 1,
+--     pathname = "/***/lua-basedir/test/test_dir/empty.txt",
+--     rdev = 0,
+--     rpath = "/empty.txt",
+--     size = 0,
+--     type = "file",
+--     uid = 504
+-- }
 ```
 
 
@@ -197,17 +260,4 @@ returns a directory contents of pathname.
 - `entries:string[]`: `nil` on failure or not found.
 - `err:string`: error message.
 
-
-## info, err = basedir:stat( pathname )
-
-obtains information about the file pointed to the specified pathname.
-
-**Parameters**
-
-- `pathname:string`: pathname string.
-
-**Returns**
-
-- `entries:table`: `nil` on failure or not found.
-- `err:string`: error message.
 

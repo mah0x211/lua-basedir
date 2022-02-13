@@ -21,13 +21,12 @@
 --
 -- modules
 local assert = assert
-local concat = table.concat
 local format = string.format
-local sub = string.sub
 local open = io.open
+local sub = string.sub
+local type = type
 local error = require('error')
 local errno = error.errno
-local extname = require('extname')
 local getcwd = require('getcwd')
 local fstat = require('fstat')
 local opendir = require('opendir')
@@ -37,141 +36,121 @@ local ENOENT = errno.ENOENT
 
 --- @class BaseDir
 --- @field basedir string
---- @field follow_symlinks boolean
+--- @field follow_symlink boolean
 local BaseDir = {}
 BaseDir.__index = BaseDir
 
---- stat
---- @param rpath string
---- @return table<string, any> stat
---- @return string err
-function BaseDir:stat(rpath)
-    -- convert relative-path to absolute-path
-    local pathname, apath = self:realpath(rpath)
-    local info, err, eno = fstat(pathname, self.follow_symlinks)
-
-    if err then
-        if errno[eno] == ENOENT then
-            return nil
-        end
-        return nil, format('failed to stat: %s - %s', apath, err)
-    end
-
-    -- regular file
-    if info.type == 'file' then
-        local ext = extname(apath)
-
-        return {
-            type = info.type,
-            pathname = pathname,
-            rpath = apath,
-            size = info.size,
-            ctime = info.ctime,
-            mtime = info.mtime,
-            ext = ext,
-        }
-    end
-
-    -- other
-    return {
-        type = info.type,
-        pathname = pathname,
-        rpath = apath,
-        ctime = info.ctime,
-        mtime = info.mtime,
-    }
-end
-
 --- normalize
---- @vararg string
---- @return string
-local function normalize(...)
-    return assert(realpath('/' .. concat({
-        ...,
-    }, '/'), nil, false))
+--- @param pathname string
+--- @return string rpath
+function BaseDir:normalize(pathname)
+    return assert(realpath('/' .. pathname, nil, false))
 end
 
 --- realpath
---- @param rpath string
+--- @param pathname string
 --- @return string apath
---- @return string rpath
-function BaseDir:realpath(rpath)
-    rpath = normalize(rpath)
-    return self.basedir .. rpath, rpath
-end
-
---- exists
---- @param rpath string
---- @return string|nil apath
 --- @return string err
-function BaseDir:exists(rpath)
-    rpath = self:realpath(rpath)
+--- @return string rpath
+function BaseDir:realpath(pathname)
+    local base = self.basedir
+    local blen = #base
+    local rpath = self:normalize(pathname)
+    local apath, err, eno = realpath(base .. rpath)
 
-    local apath, err, eno = realpath(rpath)
-    if eno then
+    if err then
         if errno[eno] == ENOENT then
             return nil
         end
         return nil, err
+    elseif not self.follow_symlink and
+        (sub(apath, 1, blen) ~= base or #apath > blen and
+            sub(apath, blen + 1, blen + 1) ~= '/') then
+        return nil
     end
 
-    return apath
+    return apath, nil, rpath
+end
+
+--- stat
+--- @param pathname string
+--- @return table<string, any> stat
+--- @return string err
+function BaseDir:stat(pathname)
+    -- convert relative-path to absolute-path
+    local apath, err, rpath = self:realpath(pathname)
+    if not apath then
+        return nil, err
+    end
+
+    local stat, eno
+    stat, err, eno = fstat(apath, false)
+    if err then
+        if errno[eno] == ENOENT then
+            return nil
+        end
+        return nil, format('failed to stat: %s - %s', rpath, err)
+    end
+
+    -- append absolute paths
+    stat.pathname = apath
+    stat.rpath = rpath
+    return stat
+end
+
+--- exists
+--- @param pathname string
+--- @return string|nil apath
+--- @return string err
+function BaseDir:exists(pathname)
+    return self:realpath(pathname)
 end
 
 --- tofile
---- @param rpath string
+--- @param pathname string
 --- @return string|nil apath
 --- @return string err
-function BaseDir:tofile(rpath)
-    local apath, err = self:exists(rpath)
-    if err then
+function BaseDir:tofile(pathname)
+    local stat, err = self:stat(pathname)
+    if not stat then
         return nil, err
+    elseif stat.type == 'file' then
+        return stat.pathname
     end
-
-    local info
-    info, err = fstat(apath)
-    if err or info.type ~= 'file' then
-        return nil, err
-    end
-
-    return apath
 end
 
 --- todir
---- @param rpath string
+--- @param pathname string
 --- @return string|nil apath
 --- @return string err
-function BaseDir:todir(rpath)
-    local apath, err = self:exists(rpath)
-    if err then
+function BaseDir:todir(pathname)
+    local stat, err = self:stat(pathname)
+    if not stat then
         return nil, err
+    elseif stat.type == 'directory' then
+        return stat.pathname
     end
-
-    local info
-    info, err = fstat(apath)
-    if err or info.type ~= 'directory' then
-        return nil, err
-    end
-
-    return apath
 end
 
 --- open
---- @param rpath string
+--- @param pathname string
 --- @return file* f
 --- @return string err
-function BaseDir:open(rpath)
-    local apath = self:realpath(rpath)
+function BaseDir:open(pathname)
+    local apath, err = self:realpath(pathname)
+    if not apath then
+        return nil, err
+    end
     return open(apath)
 end
 
 --- read
---- @param rpath string
+--- @param pathname string
 --- @return string content
 --- @return string err
-function BaseDir:read(rpath)
-    local f, ferr = self:open(rpath)
-    if ferr then
+function BaseDir:read(pathname)
+    local f, ferr = self:open(pathname)
+    if not f then
         return nil, ferr
     end
 
@@ -185,30 +164,29 @@ function BaseDir:read(rpath)
 end
 
 --- opendir
---- @param rpath string
+--- @param pathname string
 --- @return userdata dir
 --- @return string err
-function BaseDir:opendir(rpath)
-    local pathname = self:realpath(rpath)
-    local dir, err, eno = opendir(pathname)
-
-    -- failed to opendir
-    if not dir then
-        if errno[eno] == ENOENT then
-            return nil
-        end
-        return nil, format('failed to opendir %s: %s', rpath, err)
+function BaseDir:opendir(pathname)
+    local apath, err = self:realpath(pathname)
+    if not apath then
+        return nil, err
     end
 
-    return dir
+    local dir, derr, eno = opendir(apath)
+    if dir then
+        return dir
+    elseif errno[eno] ~= ENOENT then
+        return nil, format('failed to opendir %s: %s', pathname, derr)
+    end
 end
 
 --- readdir
---- @param rpath string
+--- @param pathname string
 --- @return string[] entries
 --- @return string err
-function BaseDir:readdir(rpath)
-    local dir, err = self:opendir(rpath)
+function BaseDir:readdir(pathname)
+    local dir, err = self:opendir(pathname)
     if not dir then
         return nil, err
     end
@@ -226,7 +204,7 @@ function BaseDir:readdir(rpath)
     dir:closedir()
     -- failed to readdir
     if err then
-        return nil, format('failed to readdir %s - %s', rpath, err)
+        return nil, format('failed to readdir %s: %s', pathname, err)
     end
 
     return list
