@@ -111,35 +111,6 @@ function testcase.stat()
     assert.is_nil(err)
 end
 
-function testcase.exists()
-    local r = basedir.new(TESTDIR)
-
-    -- test that returns the absolute path on filesystem if the pathname exists
-    for rpath, pattern in pairs({
-        ['./foo/../bar/../empty.txt'] = '/empty.txt$',
-        ['./foo/../bar/../subdir'] = '/subdir$',
-    }) do
-        local pathname = assert(r:exists(rpath))
-        assert.match(pathname, TESTDIR .. pattern, false)
-    end
-end
-
-function testcase.tofile()
-    local r = basedir.new(TESTDIR)
-
-    -- test that returns the absolute pathname on filesystem if the file exists
-    local pathname = assert(r:tofile('./foo/../bar/../empty.txt'))
-    assert.match(pathname, TESTDIR .. '/empty.txt$', false)
-end
-
-function testcase.todir()
-    local r = basedir.new(TESTDIR)
-
-    -- test that returns the absolute pathname on filesystem if the directory exists
-    local pathname = assert(r:todir('./foo/../bar/../subdir'))
-    assert.match(pathname, TESTDIR .. '/subdir$', false)
-end
-
 function testcase.open()
     local r = basedir.new(TESTDIR)
 
