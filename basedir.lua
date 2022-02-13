@@ -98,19 +98,6 @@ function BaseDir:stat(pathname)
     return stat
 end
 
---- todir
---- @param pathname string
---- @return string|nil apath
---- @return string err
-function BaseDir:todir(pathname)
-    local stat, err = self:stat(pathname)
-    if not stat then
-        return nil, err
-    elseif stat.type == 'directory' then
-        return stat.pathname
-    end
-end
-
 --- open
 --- @param pathname string
 --- @return file* f

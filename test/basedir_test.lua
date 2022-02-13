@@ -111,14 +111,6 @@ function testcase.stat()
     assert.is_nil(err)
 end
 
-function testcase.todir()
-    local r = basedir.new(TESTDIR)
-
-    -- test that returns the absolute pathname on filesystem if the directory exists
-    local pathname = assert(r:todir('./foo/../bar/../subdir'))
-    assert.match(pathname, TESTDIR .. '/subdir$', false)
-end
-
 function testcase.open()
     local r = basedir.new(TESTDIR)
 

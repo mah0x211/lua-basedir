@@ -120,28 +120,6 @@ local stat = assert(bd:stat('empty.txt'))
 ```
 
 
-## apath, err = basedir:todir( pathname )
-
-converts the pathname to an absolute dirpath after normalizing it based on the base directory.
-
-**Parameters**
-
-- `pathname:string`: pathname string.
-
-**Returns**
-
-- `apath:string`: absolute dirpath on filesystem, or `nil` if it does not exist.
-- `err:string`: error message.
-
-**Example**
-
-```lua
-local basedir = require('basedir')
-local bd = basedir.new('test_dir')
-print( bd:todir('./foo/../bar/../baz/../subdir') );
-```
-
-
 ## f, err = basedir:open( pathname )
 
 open the specified file.
