@@ -40,6 +40,14 @@ function testcase.new()
     end
 end
 
+function testcase.normalize()
+    local r = basedir.new(TESTDIR)
+
+    -- test that converts pathname to absolute path in the base directory
+    local pathname = r:normalize('./foo/../bar/../baz/qux/../empty.txt')
+    assert.equal(pathname, '/baz/empty.txt')
+end
+
 function testcase.open()
     local r = basedir.new(TESTDIR)
 

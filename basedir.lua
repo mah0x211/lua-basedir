@@ -41,6 +41,13 @@ local ENOENT = errno.ENOENT
 local BaseDir = {}
 BaseDir.__index = BaseDir
 
+--- normalize
+--- @param pathname string
+--- @return string rpath
+function BaseDir:normalize(pathname)
+    return assert(realpath('/' .. pathname, nil, false))
+end
+
 --- stat
 --- @param rpath string
 --- @return table<string, any> stat

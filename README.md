@@ -35,6 +35,27 @@ local bd = basedir.new('test_dir')
 ```
 
 
+## rpath = basedir:normalize( pathname )
+
+converts a pathname to an absolute path in the base directory.
+
+**Parameters**
+
+- `pathname:string`: pathname string.
+
+**Returns**
+
+- `rpath:string`: an absolute path in the base directory.
+
+**Example**
+
+```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
+print(bd:normalize('/foo/../bar/../empty.txt'))
+```
+
+
 ## apath, rpath = basedir:realpath( pathname )
 
 converts the pathname to an absolute path after normalizing it based on the base directory.
