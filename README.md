@@ -120,13 +120,14 @@ local stat = assert(bd:stat('empty.txt'))
 ```
 
 
-## f, err = basedir:open( pathname )
+## f, err = basedir:open( pathname [, mode] )
 
 open the specified file.
 
 **Parameters**
 
 - `pathname:string`: pathname string.
+- `mode:string`: mode string that same as the `mode` argument of the `io.open` function.:
 
 **Returns**
 

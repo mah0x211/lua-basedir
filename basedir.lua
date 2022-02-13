@@ -21,6 +21,7 @@
 --
 -- modules
 local assert = assert
+local find = string.find
 local format = string.format
 local open = io.open
 local sub = string.sub
@@ -33,6 +34,7 @@ local mkdir = require('mkdir')
 local opendir = require('opendir')
 local realpath = require('realpath')
 local rmdir = require('rmdir')
+local basename = require('basename')
 -- constants
 local ENOENT = errno.ENOENT
 
@@ -103,14 +105,33 @@ end
 
 --- open
 --- @param pathname string
+--- @param mode string
 --- @return file* f
 --- @return string err
-function BaseDir:open(pathname)
+function BaseDir:open(pathname, mode)
+    if mode == nil then
+        mode = 'r'
+    elseif type(mode) ~= 'string' then
+        error('mode must be string', 2)
+    end
+
     local apath, err = self:realpath(pathname)
     if not apath then
-        return nil, err
+        -- got error or mode is not creation mode
+        if err or not find(mode, '^[wa]') then
+            return nil, err
+        end
+
+        local rpath = self:normalize(pathname)
+        local filename = basename(rpath)
+        local dirpath = sub(rpath, 1, #rpath - #filename)
+        apath, err = self:realpath(dirpath)
+        if not apath then
+            return nil, err
+        end
+        apath = apath .. '/' .. filename
     end
-    return open(apath)
+    return open(apath, mode)
 end
 
 --- read
