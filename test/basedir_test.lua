@@ -198,8 +198,20 @@ end
 function testcase.opendir()
     local r = basedir.new(TESTDIR)
 
-    -- test that read entries
+    -- test that open diretory
     local dir, err = r:opendir('/')
+    assert.is_nil(err)
+    assert.match(tostring(dir), 'dir*:')
+    dir:closedir()
+
+    -- test that returns nil if it is not directory
+    dir, err = r:opendir('/out_of_basedir')
+    assert.is_nil(dir)
+    assert.re_match(err, 'not a directory', 'i')
+
+    -- test that open symlink directory
+    r = basedir.new(TESTDIR, true)
+    dir, err = r:opendir('/out_of_basedir')
     assert.is_nil(err)
     assert.match(tostring(dir), 'dir*:')
     dir:closedir()
@@ -221,6 +233,7 @@ function testcase.readdir()
         ['subdir'] = true,
         ['empty.txt'] = true,
         ['hello.txt'] = true,
+        ['out_of_basedir'] = true,
     }
     for _, entry in ipairs(entries) do
         assert.not_empty(files)

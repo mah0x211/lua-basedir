@@ -179,12 +179,9 @@ end
 --- @return userdata dir
 --- @return string err
 function BaseDir:opendir(pathname)
-    local apath, err = self:realpath(pathname)
-    if not apath then
-        return nil, err
-    end
+    local apath = self.basedir .. self:normalize(pathname)
+    local dir, derr, eno = opendir(apath, self.follow_symlink)
 
-    local dir, derr, eno = opendir(apath)
     if dir then
         return dir
     elseif errno[eno] ~= ENOENT then
