@@ -14,8 +14,10 @@ dependencies = {
     "lua >= 5.1",
     "error >= 0.6.2",
     "extname >= 0.1.0",
-    "fstat >= 0.1.0",
+    "fstat >= 0.2.0",
     "getcwd >= 0.1.0",
+    "mkdir >= 0.2.1",
+    "rmdir >= 0.1.0",
     "opendir >= 0.1.0",
     "realpath >= 0.2.0",
 }

@@ -1,7 +1,7 @@
 # lua-basedir
 
 [![test](https://github.com/mah0x211/lua-basedir/actions/workflows/test.yml/badge.svg)](https://github.com/mah0x211/lua-basedir/actions/workflows/test.yml)
-[![Coverage Status](https://coveralls.io/repos/github/mah0x211/lua-basedir/badge.svg?branch=master)](https://coveralls.io/github/mah0x211/lua-basedir?branch=master)
+[![codecov](https://codecov.io/gh/mah0x211/lua-basedir/branch/master/graph/badge.svg)](https://codecov.io/gh/mah0x211/lua-basedir)
 
 lua-basedir is a module that limits file and directory operations to be performed under a specified directory.
 
@@ -165,6 +165,21 @@ local bd = basedir.new('test_dir')
 local str = assert(bd:read('subdir/world.txt'))
 print(str)
 ```
+
+
+## ok, err = basedir:rmdir( pathname [, recursive] )
+
+remove a directory file.
+
+**Parameters**
+
+- `pathname:string`: path of the directory.
+- `recursive:boolean`: remove directories and their contents recursively. (default `false`)
+
+**Returns**
+
+- `ok:boolean`: `true` on success.
+- `err:string`: error message.
 
 
 ## dir, err = basedir:opendir( pathname )

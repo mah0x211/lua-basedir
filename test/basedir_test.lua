@@ -2,6 +2,7 @@ require('luacov')
 local unpack = unpack or table.unpack
 local testcase = require('testcase')
 local basedir = require('basedir')
+local mkdir = require('mkdir')
 
 local TESTDIR = 'test_dir'
 
@@ -139,6 +140,27 @@ function testcase.read()
     content, err = r:read('/unknown.txt')
     assert.is_nil(content)
     assert.is_nil(err)
+end
+
+function testcase.rmdir()
+    local r = basedir.new(TESTDIR)
+    assert(mkdir(TESTDIR .. '/foo/bar/baz', nil, true, false))
+
+    -- test that remove a directory
+    assert(r:rmdir('/foo/bar/baz'))
+    local stat = r:stat('/foo/bar/baz')
+    assert.is_nil(stat)
+
+    -- test that cannot remove a non-empty directory
+    local ok, err = r:rmdir('/foo')
+    assert.is_false(ok)
+    assert.match(err, 'not empty')
+    assert(r:stat('/foo'))
+
+    -- test that recursively remove directories
+    assert(r:rmdir('/foo', true))
+    stat = r:stat('/foo')
+    assert.is_nil(stat)
 end
 
 function testcase.opendir()
