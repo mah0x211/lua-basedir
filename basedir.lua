@@ -31,6 +31,7 @@ local getcwd = require('getcwd')
 local fstat = require('fstat')
 local opendir = require('opendir')
 local realpath = require('realpath')
+local rmdir = require('rmdir')
 -- constants
 local ENOENT = errno.ENOENT
 
@@ -66,6 +67,7 @@ function BaseDir:realpath(pathname)
     elseif not self.follow_symlink and
         (sub(apath, 1, blen) ~= base or #apath > blen and
             sub(apath, blen + 1, blen + 1) ~= '/') then
+        -- absolute path is not placed at the base directory
         return nil
     end
 
@@ -127,6 +129,16 @@ function BaseDir:read(pathname)
     end
 
     return src
+end
+
+--- rmdir
+--- @param pathname string
+--- @param recursive boolean
+--- @return boolean ok
+--- @return string err
+function BaseDir:rmdir(pathname, recursive)
+    local apath = self.basedir .. self:normalize(pathname)
+    return rmdir(apath, recursive)
 end
 
 --- opendir
