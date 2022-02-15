@@ -12,6 +12,7 @@ description = {
 }
 dependencies = {
     "lua >= 5.1",
+    "basename >= 0.1.0",
     "error >= 0.6.2",
     "extname >= 0.1.0",
     "fstat >= 0.2.0",

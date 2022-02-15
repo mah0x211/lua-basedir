@@ -120,13 +120,32 @@ function testcase.open()
     local f, err = r:open('subdir/world.txt')
     assert.is_nil(err)
     local content = assert(f:read('*a'))
-    assert.equal(content, 'world')
     f:close()
+    assert.equal(content, 'world')
 
     -- test that cannot open a file if it does not exist
     f, err = r:open('foo/bar/unknown/file')
     assert.is_nil(f)
     assert.is_nil(err)
+
+    -- test that cannot create a file if parent directory is not exist
+    f, err = r:open('unknown-dir/write.txt', 'a+')
+    assert.is_nil(f)
+    assert.is_nil(err)
+
+    -- test that can open a file in write mode
+    f = assert(r:open('write.txt', 'a+'))
+    assert(f:write('hello new file'))
+    f:close()
+    f = assert(r:open('write.txt'))
+    content = assert(f:read('*a'))
+    f:close()
+    assert.equal(content, 'hello new file')
+    os.remove(TESTDIR .. '/write.txt')
+
+    -- test that throws an error
+    err = assert.throws(r.open, r, 'write.txt', {})
+    assert.match(err, 'mode must be string')
 end
 
 function testcase.read()
