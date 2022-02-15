@@ -182,6 +182,21 @@ remove a directory file.
 - `err:string`: error message.
 
 
+## ok, err = basedir:mkdir( pathname [, mode] )
+
+make directories.
+
+**Parameters**
+
+- `pathname:string`: pathname string.
+- `mode:string|integer`: file permissions in octal notation as a string, or integer. (default: `'0777'`)
+
+**Returns**
+
+- `ok:boolean`: `true` on success.
+- `err:string`: error message.
+
+
 ## dir, err = basedir:opendir( pathname )
 
 open a [directory stream](https://github.com/mah0x211/lua-opendir).

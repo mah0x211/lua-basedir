@@ -29,6 +29,7 @@ local error = require('error')
 local errno = error.errno
 local getcwd = require('getcwd')
 local fstat = require('fstat')
+local mkdir = require('mkdir')
 local opendir = require('opendir')
 local realpath = require('realpath')
 local rmdir = require('rmdir')
@@ -139,6 +140,17 @@ end
 function BaseDir:rmdir(pathname, recursive)
     local apath = self.basedir .. self:normalize(pathname)
     return rmdir(apath, recursive)
+end
+
+--- mkdir
+--- @param pathname string
+--- @param mode string|integer
+--- @return boolean ok
+--- @return string err
+--- @return integer errno
+function BaseDir:mkdir(pathname, mode)
+    local apath = self.basedir .. self:normalize(pathname)
+    return mkdir(apath, mode, true, self.follow_symlink)
 end
 
 --- opendir
