@@ -3,6 +3,7 @@ local unpack = unpack or table.unpack
 local testcase = require('testcase')
 local basedir = require('basedir')
 local mkdir = require('mkdir')
+local rmdir = require('rmdir')
 
 local TESTDIR = 'test_dir'
 
@@ -161,6 +162,18 @@ function testcase.rmdir()
     assert(r:rmdir('/foo', true))
     stat = r:stat('/foo')
     assert.is_nil(stat)
+end
+
+function testcase.mkdir()
+    local r = basedir.new(TESTDIR)
+
+    -- test that make a directory
+    assert(r:mkdir('/foo/bar', '0700'))
+    local stat = assert(r:stat('/foo/bar'))
+    assert.equal(stat.type, 'directory')
+    assert.equal(stat.perm, '0700')
+
+    assert(rmdir(TESTDIR .. '/foo', true))
 end
 
 function testcase.opendir()
