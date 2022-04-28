@@ -162,6 +162,22 @@ function BaseDir:rename(oldpath, newpath)
     return true
 end
 
+--- put
+--- @param extpath string
+--- @param newpath string
+--- @return boolean ok
+--- @return string err
+function BaseDir:put(extpath, newpath)
+    newpath = self.basedir .. self:normalize(newpath)
+
+    local ok, err = rename(extpath, newpath)
+    if not ok then
+        return false, err
+    end
+
+    return true
+end
+
 --- open
 --- @param pathname string
 --- @param mode? string

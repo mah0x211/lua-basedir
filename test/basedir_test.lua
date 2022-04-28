@@ -308,3 +308,21 @@ function testcase.rename()
     assert.is_false(ok)
     assert.match(string.lower(err), 'no such file or', false)
 end
+
+function testcase.put()
+    local r = basedir.new(TESTDIR)
+    local f = assert(io.open('example.txt', 'a'))
+    f:close()
+
+    -- test that put external file into basedir
+    assert(r:put('example.txt', '/example.txt'))
+    r:remove('/example.txt')
+
+    -- test that return error if cannot be put into non exists directory
+    f = assert(io.open('example.txt', 'a'))
+    f:close()
+    local ok, err = r:put('example.txt', '/example/example.txt')
+    os.remove('example.txt')
+    assert.is_false(ok)
+    assert.match(string.lower(err), 'no such file or', false)
+end
