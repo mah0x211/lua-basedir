@@ -24,8 +24,10 @@ local assert = assert
 local find = string.find
 local format = string.format
 local open = io.open
+local remove = os.remove
 local sub = string.sub
 local type = type
+local replace = require('string.replace')
 local error = require('error')
 local errno = error.errno
 local getcwd = require('getcwd')
@@ -124,6 +126,21 @@ function BaseDir:stat(pathname)
     stat.pathname = apath
     stat.rpath = rpath
     return stat
+end
+
+--- remove
+--- @param pathanme string
+--- @return boolean ok
+--- @return string err
+function BaseDir:remove(pathanme)
+    local rpath = self.basedir .. self:normalize(pathanme)
+    local ok, err = remove(rpath)
+
+    if not ok then
+        return false, replace(err, self.basedir)
+    end
+
+    return true
 end
 
 --- open
