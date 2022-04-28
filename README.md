@@ -56,6 +56,28 @@ print(bd:normalize('/foo/../bar/../empty.txt'))
 ```
 
 
+## dirname, filename = basedir:dirname( pathname )
+
+split a pathname based on the base directory into dirname and filename.
+
+**Parameters**
+
+- `pathname:string`: pathname string.
+
+**Returns**
+
+- `dirname:string`: an absolute path in the base directory.
+- `filename:string`: the component following the final `/`.
+
+**Example**
+
+```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
+print(bd:dirname('/foo/bar/../empty.txt')) -- /foo empty.txt
+```
+
+
 ## apath, err, rpath = basedir:realpath( pathname )
 
 converts a pathname to an absolute path in the filesystem and in the base directory.

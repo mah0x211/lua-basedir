@@ -50,6 +50,38 @@ function testcase.normalize()
     assert.equal(pathname, '/baz/empty.txt')
 end
 
+function testcase.dirname()
+    local r = basedir.new(TESTDIR)
+
+    -- test that split pathname into dirname and filename
+    for _, v in ipairs({
+        {
+            pathname = './foo/../bar/../baz/qux/../empty.txt',
+            dirname = '/baz',
+            filename = 'empty.txt',
+        },
+        {
+            pathname = './foo/../empty.txt',
+            dirname = '/',
+            filename = 'empty.txt',
+        },
+        {
+            pathname = './empty.txt',
+            dirname = '/',
+            filename = 'empty.txt',
+        },
+        {
+            pathname = 'empty.txt/..',
+            dirname = '/',
+            filename = '',
+        },
+    }) do
+        local dirname, filename = r:dirname(v.pathname)
+        assert.equal(dirname, v.dirname)
+        assert.equal(filename, v.filename)
+    end
+end
+
 function testcase.realpath()
     local r = basedir.new(TESTDIR)
 

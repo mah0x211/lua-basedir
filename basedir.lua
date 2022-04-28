@@ -51,6 +51,29 @@ function BaseDir:normalize(pathname)
     return assert(realpath('/' .. pathname, nil, false))
 end
 
+--- dirname
+--- @param pathname string
+--- @return string dirname
+--- @return string filename
+function BaseDir:dirname(pathname)
+    local rpath = self:normalize(pathname)
+    local filename = basename(rpath)
+
+    -- filename does not exists
+    if filename == '/' then
+        return rpath, ''
+    end
+
+    -- extract dirname
+    local dlen = #rpath - #filename
+    -- remove trailing-slash from dirname
+    if dlen > 1 then
+        dlen = dlen - 1
+    end
+
+    return sub(rpath, 1, dlen), filename
+end
+
 --- realpath
 --- @param pathname string
 --- @return string apath
@@ -105,7 +128,7 @@ end
 
 --- open
 --- @param pathname string
---- @param mode string
+--- @param mode? string
 --- @return file* f
 --- @return string err
 function BaseDir:open(pathname, mode)
@@ -122,9 +145,7 @@ function BaseDir:open(pathname, mode)
             return nil, err
         end
 
-        local rpath = self:normalize(pathname)
-        local filename = basename(rpath)
-        local dirpath = sub(rpath, 1, #rpath - #filename)
+        local dirpath, filename = self:dirname(pathname)
         apath, err = self:realpath(dirpath)
         if not apath then
             return nil, err
@@ -155,7 +176,7 @@ end
 
 --- rmdir
 --- @param pathname string
---- @param recursive boolean
+--- @param recursive? boolean
 --- @return boolean ok
 --- @return string err
 function BaseDir:rmdir(pathname, recursive)
@@ -220,7 +241,7 @@ end
 
 --- new
 --- @param pathname string
---- @param follow_symlink boolean
+--- @param follow_symlink? boolean
 --- @return BaseDir
 local function new(pathname, follow_symlink)
     if type(pathname) ~= 'string' then
