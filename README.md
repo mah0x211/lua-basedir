@@ -166,6 +166,50 @@ print(f:read('*a'))
 f:close()
 ```
 
+## ok, err = basedir:remove( pathname )
+
+remove the specified file.
+
+**Parameters**
+
+- `pathname:string`: pathname string.
+
+**Returns**
+
+- `ok:boolean`: `true` on success.
+- `err:string`: error message on failure.
+
+**Example**
+
+```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
+assert(bd:remove('foo.txt'))
+```
+
+
+## ok, err = basedir:rename( oldpath, newpath )
+
+rename the `oldpath` to `newpath`.
+
+**Parameters**
+
+- `oldpath:string`: path of the file/directory to be renamed.
+- `newpath:string`: new path of the file/directory.
+
+**Returns**
+
+- `ok:boolean`: `true` on success.
+- `err:string`: error message on failure.
+
+**Example**
+
+```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
+assert(bd:rename('foo.txt', 'bar.txt))
+```
+
 
 ## str, err = basedir:read( pathname )
 

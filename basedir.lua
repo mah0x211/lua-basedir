@@ -25,6 +25,7 @@ local find = string.find
 local format = string.format
 local open = io.open
 local remove = os.remove
+local rename = os.rename
 local sub = string.sub
 local type = type
 local replace = require('string.replace')
@@ -138,6 +139,24 @@ function BaseDir:remove(pathanme)
 
     if not ok then
         return false, replace(err, self.basedir)
+    end
+
+    return true
+end
+
+--- rename
+--- @param oldpath string
+--- @param newpath string
+--- @return boolean ok
+--- @return string err
+function BaseDir:rename(oldpath, newpath)
+    local base = self.basedir
+    oldpath = base .. self:normalize(oldpath)
+    newpath = base .. self:normalize(newpath)
+
+    local ok, err = rename(oldpath, newpath)
+    if not ok then
+        return false, err
     end
 
     return true

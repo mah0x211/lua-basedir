@@ -293,3 +293,18 @@ function testcase.remove()
     assert.is_false(ok)
     assert.match(err, '/foo%.txt.+ file or', false)
 end
+
+function testcase.rename()
+    local r = basedir.new(TESTDIR)
+    local f = assert(r:open('/foo.txt', 'a'))
+    f:close()
+
+    -- test that rename filepath to new name
+    assert(r:rename('/foo.txt', '/bar.txt'))
+    r:remove('/bar.txt')
+
+    -- test that return error if cannot be renamed to newpath
+    local ok, err = r:rename('/bar.txt', '/baa/qux/quux.txt')
+    assert.is_false(ok)
+    assert.match(string.lower(err), 'no such file or', false)
+end
