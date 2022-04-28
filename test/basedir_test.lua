@@ -279,3 +279,17 @@ function testcase.readdir()
     assert.is_nil(entries)
     assert.is_nil(err)
 end
+
+function testcase.remove()
+    local r = basedir.new(TESTDIR)
+    local f = assert(r:open('/foo.txt', 'a'))
+    f:close()
+
+    -- test that remove filepath
+    assert(r:remove('/foo.txt'))
+
+    -- test that return false if file not exists
+    local ok, err = r:remove('/foo.txt')
+    assert.is_false(ok)
+    assert.match(err, '/foo%.txt.+ file or', false)
+end

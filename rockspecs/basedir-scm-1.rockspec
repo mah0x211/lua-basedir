@@ -18,9 +18,10 @@ dependencies = {
     "fstat >= 0.2.0",
     "getcwd >= 0.1.0",
     "mkdir >= 0.2.1",
-    "rmdir >= 0.1.0",
     "opendir >= 0.1.0",
     "realpath >= 0.2.0",
+    "rmdir >= 0.1.0",
+    "string-replace >= 0.1.0",
 }
 build = {
     type = "builtin",
