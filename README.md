@@ -35,6 +35,31 @@ local bd = basedir.new('test_dir')
 ```
 
 
+## ok, err = basedir:put( extpath, newpath )
+
+put the external file/directory `extpath` into the base directory as `newpath`.
+
+**Parameters**
+
+- `extpath:string`: path of the file/directory to be placed in the base directory.
+- `newpath:string`: new path of the file/directory based on the base directory.
+
+**Returns**
+
+- `ok:boolean`: `true` on success.
+- `err:string`: error message on failure.
+
+**Example**
+
+```lua
+local basedir = require('basedir')
+local bd = basedir.new('test_dir')
+local f = assert(io.open('example.txt', 'a'))
+f:close()
+assert(bd:put('example.txt', '/example.txt))
+```
+
+
 ## rpath = basedir:normalize( pathname )
 
 converts a pathname to an absolute path in the base directory.
