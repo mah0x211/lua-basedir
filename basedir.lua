@@ -29,8 +29,7 @@ local rename = os.rename
 local sub = string.sub
 local type = type
 local replace = require('string.replace')
-local error = require('error')
-local errno = error.errno
+local errno = require('errno')
 local getcwd = require('getcwd')
 local fstat = require('fstat')
 local mkdir = require('mkdir')
@@ -39,7 +38,7 @@ local realpath = require('realpath')
 local rmdir = require('rmdir')
 local basename = require('basename')
 -- constants
-local ENOENT = errno.ENOENT
+local ENOENT = errno.ENOENT.code
 
 --- @class BaseDir
 --- @field basedir string
@@ -89,7 +88,7 @@ function BaseDir:realpath(pathname)
     local apath, err, eno = realpath(base .. rpath)
 
     if err then
-        if errno[eno] == ENOENT then
+        if eno == ENOENT then
             return nil
         end
         return nil, err
@@ -117,7 +116,7 @@ function BaseDir:stat(pathname)
     local stat, eno
     stat, err, eno = fstat(apath, false)
     if err then
-        if errno[eno] == ENOENT then
+        if eno == ENOENT then
             return nil
         end
         return nil, format('failed to stat: %s - %s', rpath, err)
@@ -257,7 +256,7 @@ function BaseDir:opendir(pathname)
 
     if dir then
         return dir
-    elseif errno[eno] ~= ENOENT then
+    elseif eno ~= ENOENT then
         return nil, format('failed to opendir %s: %s', pathname, derr)
     end
 end
