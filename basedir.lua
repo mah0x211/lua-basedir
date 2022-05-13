@@ -37,8 +37,6 @@ local opendir = require('opendir')
 local realpath = require('realpath')
 local rmdir = require('rmdir')
 local basename = require('basename')
--- constants
-local ENOENT = errno.ENOENT.code
 
 --- @class BaseDir
 --- @field basedir string
@@ -85,10 +83,10 @@ function BaseDir:realpath(pathname)
     local base = self.basedir
     local blen = #base
     local rpath = self:normalize(pathname)
-    local apath, err, eno = realpath(base .. rpath)
+    local apath, err = realpath(base .. rpath)
 
     if err then
-        if eno == ENOENT then
+        if err.type == errno.ENOENT then
             return nil
         end
         return nil, err
@@ -113,13 +111,13 @@ function BaseDir:stat(pathname)
         return nil, err
     end
 
-    local stat, eno
-    stat, err, eno = fstat(apath, false)
+    local stat
+    stat, err = fstat(apath, false)
     if err then
-        if eno == ENOENT then
+        if err.type == errno.ENOENT then
             return nil
         end
-        return nil, format('failed to stat: %s - %s', rpath, err)
+        return nil, err
     end
 
     -- append absolute paths
@@ -252,12 +250,12 @@ end
 --- @return string err
 function BaseDir:opendir(pathname)
     local apath = self.basedir .. self:normalize(pathname)
-    local dir, derr, eno = opendir(apath, self.follow_symlink)
+    local dir, derr = opendir(apath, self.follow_symlink)
 
     if dir then
         return dir
-    elseif eno ~= ENOENT then
-        return nil, format('failed to opendir %s: %s', pathname, derr)
+    elseif derr.type ~= errno.ENOENT then
+        return nil, derr
     end
 end
 
@@ -284,7 +282,7 @@ function BaseDir:readdir(pathname)
     dir:closedir()
     -- failed to readdir
     if err then
-        return nil, format('failed to readdir %s: %s', pathname, err)
+        return nil, err
     end
 
     return list
@@ -315,14 +313,15 @@ local function new(pathname, follow_symlink)
         local err
         basedir, err = realpath(basedir)
         if err then
-            error(format('failed to access the pathname %q: %s', pathname, err))
+            error(format('failed to access the pathname %q: %s', pathname,
+                         tostring(err)))
         end
     end
 
     -- check type of entry
     local stat, err = fstat(basedir, follow_symlink)
     if err then
-        error(format('failed to get stat %q: %s', pathname, err))
+        error(format('failed to get stat %q: %s', pathname, tostring(err)))
     elseif stat.type ~= 'directory' then
         error(format('pathname %q is not directory', pathname))
     end
