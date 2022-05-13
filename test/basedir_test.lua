@@ -143,6 +143,14 @@ function testcase.stat()
     info, err = r:stat('empty.txta')
     assert.is_nil(info)
     assert.is_nil(err)
+
+    -- test that return nil if it does not exist when fstat
+    r.realpath = function(_, pathname)
+        return pathname
+    end
+    info, err = r:stat('empty.txta')
+    assert.is_nil(info)
+    assert.is_nil(err)
 end
 
 function testcase.open()
