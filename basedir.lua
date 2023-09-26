@@ -29,6 +29,7 @@ local rename = os.rename
 local sub = string.sub
 local type = type
 local replace = require('string.replace')
+local toerror = require('error').toerror
 local errno = require('errno')
 local getcwd = require('getcwd')
 local fstat = require('fstat')
@@ -76,9 +77,9 @@ end
 
 --- realpath
 --- @param pathname string
---- @return string apath
---- @return string err
---- @return string rpath
+--- @return string? apath
+--- @return any err
+--- @return string? rpath
 function BaseDir:realpath(pathname)
     local base = self.basedir
     local blen = #base
@@ -103,7 +104,7 @@ end
 --- stat
 --- @param pathname string
 --- @return table<string, any> stat
---- @return string err
+--- @return any err
 function BaseDir:stat(pathname)
     -- convert relative-path to absolute-path
     local apath, err, rpath = self:realpath(pathname)
@@ -129,13 +130,13 @@ end
 --- remove
 --- @param pathanme string
 --- @return boolean ok
---- @return string err
+--- @return any err
 function BaseDir:remove(pathanme)
     local rpath = self.basedir .. self:normalize(pathanme)
     local ok, err = remove(rpath)
 
     if not ok then
-        return false, replace(err, self.basedir)
+        return false, toerror(replace(err, self.basedir))
     end
 
     return true
@@ -145,7 +146,7 @@ end
 --- @param oldpath string
 --- @param newpath string
 --- @return boolean ok
---- @return string err
+--- @return any err
 function BaseDir:rename(oldpath, newpath)
     local base = self.basedir
     oldpath = base .. self:normalize(oldpath)
@@ -153,7 +154,7 @@ function BaseDir:rename(oldpath, newpath)
 
     local ok, err = rename(oldpath, newpath)
     if not ok then
-        return false, err
+        return false, toerror(err)
     end
 
     return true
@@ -163,13 +164,13 @@ end
 --- @param extpath string
 --- @param newpath string
 --- @return boolean ok
---- @return string err
+--- @return any err
 function BaseDir:put(extpath, newpath)
     newpath = self.basedir .. self:normalize(newpath)
 
     local ok, err = rename(extpath, newpath)
     if not ok then
-        return false, err
+        return false, toerror(err)
     end
 
     return true
@@ -179,7 +180,7 @@ end
 --- @param pathname string
 --- @param mode? string
 --- @return file* f
---- @return string err
+--- @return any err
 function BaseDir:open(pathname, mode)
     if mode == nil then
         mode = 'r'
@@ -201,13 +202,16 @@ function BaseDir:open(pathname, mode)
         end
         apath = apath .. '/' .. filename
     end
-    return open(apath, mode)
+
+    local f
+    f, err = open(apath, mode)
+    return f, err and toerror(err) or nil
 end
 
 --- read
 --- @param pathname string
 --- @return string content
---- @return string err
+--- @return any err
 function BaseDir:read(pathname)
     local f, ferr = self:open(pathname)
     if not f then
@@ -217,7 +221,7 @@ function BaseDir:read(pathname)
     local src, err = f:read('*a')
     f:close()
     if err then
-        return nil, err
+        return nil, toerror(err)
     end
 
     return src
@@ -237,8 +241,7 @@ end
 --- @param pathname string
 --- @param mode string|integer
 --- @return boolean ok
---- @return string err
---- @return integer errno
+--- @return any err
 function BaseDir:mkdir(pathname, mode)
     local apath = self.basedir .. self:normalize(pathname)
     return mkdir(apath, mode, true, self.follow_symlink)
@@ -247,7 +250,7 @@ end
 --- opendir
 --- @param pathname string
 --- @return userdata dir
---- @return string err
+--- @return any err
 function BaseDir:opendir(pathname)
     local apath = self.basedir .. self:normalize(pathname)
     local dir, derr = opendir(apath, self.follow_symlink)
@@ -262,7 +265,7 @@ end
 --- readdir
 --- @param pathname string
 --- @return string[] entries
---- @return string err
+--- @return any err
 function BaseDir:readdir(pathname)
     local dir, err = self:opendir(pathname)
     if not dir then

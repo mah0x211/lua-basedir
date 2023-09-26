@@ -12,6 +12,10 @@ lua-basedir is a module that limits file and directory operations to be performe
 luarocks install basedir
 ```
 
+## Error Handling
+
+the following functions return the error object created by https://github.com/mah0x211/lua-error module.
+
 
 ## bd = basedir.new( pathname [, follow_symlink] )
 
@@ -47,7 +51,7 @@ put the external file/directory `extpath` into the base directory as `newpath`.
 **Returns**
 
 - `ok:boolean`: `true` on success.
-- `err:string`: error message on failure.
+- `err:any`: error message on failure.
 
 **Example**
 
@@ -115,7 +119,7 @@ converts a pathname to an absolute path in the filesystem and in the base direct
 **Returns**
 
 - `apath:string`: an absolute path in the filesystem.
-- `err:string`: error message.
+- `err:any`: error message.
 - `rpath:string`: an absolute path in the base directory.
 
 **Example**
@@ -138,7 +142,7 @@ obtains information about the file pointed to the specified pathname.
 **Returns**
 
 - `stat:table`: `nil` on failure or not found.
-- `err:string`: error message.
+- `err:any`: error message.
 
 ```lua
 local dump = require('dump')
@@ -179,7 +183,7 @@ open the specified file.
 **Returns**
 
 - `f:file`: file on success
-- `err:string`: error message on failure.
+- `err:any`: error message on failure.
 
 **Example**
 
@@ -202,7 +206,7 @@ remove the specified file.
 **Returns**
 
 - `ok:boolean`: `true` on success.
-- `err:string`: error message on failure.
+- `err:any`: error message on failure.
 
 **Example**
 
@@ -225,7 +229,7 @@ rename the `oldpath` to `newpath`.
 **Returns**
 
 - `ok:boolean`: `true` on success.
-- `err:string`: error message on failure.
+- `err:any`: error message on failure.
 
 **Example**
 
@@ -247,7 +251,7 @@ reads the contents of the specified file.
 **Returns**
 
 - `str:string`: string on success.
-- `err:string`: error message on failure.
+- `err:any`: error message on failure.
 
 **Example**
 
@@ -271,7 +275,7 @@ remove a directory file.
 **Returns**
 
 - `ok:boolean`: `true` on success.
-- `err:string`: error message.
+- `err:any`: error message.
 
 
 ## ok, err = basedir:mkdir( pathname [, mode] )
@@ -286,7 +290,7 @@ make directories.
 **Returns**
 
 - `ok:boolean`: `true` on success.
-- `err:string`: error message.
+- `err:any`: error message.
 
 
 ## dir, err = basedir:opendir( pathname )
@@ -300,7 +304,7 @@ open a [directory stream](https://github.com/mah0x211/lua-opendir).
 **Returns**
 
 - `dir:dir*`: a directory stream.
-- `err:string`: error message.
+- `err:any`: error message.
 
 
 ## entries, err = basedir:readdir( pathname )
@@ -314,6 +318,6 @@ returns a directory contents of pathname.
 **Returns**
 
 - `entries:string[]`: `nil` on failure or not found.
-- `err:string`: error message.
+- `err:any`: error message.
 
 

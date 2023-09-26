@@ -314,7 +314,7 @@ function testcase.rename()
     -- test that return error if cannot be renamed to newpath
     local ok, err = r:rename('/bar.txt', '/baa/qux/quux.txt')
     assert.is_false(ok)
-    assert.match(string.lower(err), 'no such file or', false)
+    assert.re_match(err, 'no such file or', 'i')
 end
 
 function testcase.put()
@@ -332,5 +332,5 @@ function testcase.put()
     local ok, err = r:put('example.txt', '/example/example.txt')
     os.remove('example.txt')
     assert.is_false(ok)
-    assert.match(string.lower(err), 'no such file or', false)
+    assert.re_match(err, 'no such file or', 'i')
 end
