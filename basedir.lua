@@ -23,21 +23,21 @@
 local assert = assert
 local find = string.find
 local format = string.format
-local open = io.open
 local remove = os.remove
 local rename = os.rename
 local sub = string.sub
 local type = type
 local replace = require('string.replace')
-local toerror = require('error').toerror
-local errno = require('errno')
+local errorf = require('error').format
 local getcwd = require('getcwd')
+local fopen = require('io.fopen')
 local fstat = require('fstat')
 local mkdir = require('mkdir')
 local opendir = require('opendir')
 local realpath = require('realpath')
 local rmdir = require('rmdir')
 local basename = require('basename')
+local ENOENT = require('errno').ENOENT
 
 --- @class BaseDir
 --- @field basedir string
@@ -75,7 +75,8 @@ function BaseDir:dirname(pathname)
     return sub(rpath, 1, dlen), filename
 end
 
---- realpath
+--- realpath resolve the pathname to the absolute path in the base directory.
+--- if the pathname is not placed at the base directory, then return nil without error.
 --- @param pathname string
 --- @return string? apath
 --- @return any err
@@ -87,10 +88,11 @@ function BaseDir:realpath(pathname)
     local apath, err = realpath(base .. rpath)
 
     if err then
-        if err.type == errno.ENOENT then
+        if err.type == ENOENT then
+            -- ignore ENOENT error
             return nil
         end
-        return nil, err
+        return nil, errorf('failed to realpath()', err)
     elseif not self.follow_symlink and
         (sub(apath, 1, blen) ~= base or #apath > blen and
             sub(apath, blen + 1, blen + 1) ~= '/') then
@@ -101,7 +103,8 @@ function BaseDir:realpath(pathname)
     return apath, nil, rpath
 end
 
---- stat
+--- stat returns a table containing information about a file.
+--- if the pathname is not placed at the base directory, then return nil without error.
 --- @param pathname string
 --- @return table<string, any> stat
 --- @return any err
@@ -115,10 +118,11 @@ function BaseDir:stat(pathname)
     local stat
     stat, err = fstat(apath, false)
     if err then
-        if err.type == errno.ENOENT then
+        if err.type == ENOENT then
+            -- ignore ENOENT error
             return nil
         end
-        return nil, err
+        return nil, errorf('failed to fstat()', err)
     end
 
     -- append absolute paths
@@ -134,9 +138,9 @@ end
 function BaseDir:remove(pathanme)
     local rpath = self.basedir .. self:normalize(pathanme)
     local ok, err = remove(rpath)
-
     if not ok then
-        return false, toerror(replace(err, self.basedir))
+        return false,
+               errorf('failed to remove(): %q', replace(err, self.basedir))
     end
 
     return true
@@ -154,7 +158,7 @@ function BaseDir:rename(oldpath, newpath)
 
     local ok, err = rename(oldpath, newpath)
     if not ok then
-        return false, toerror(err)
+        return false, errorf('failed to rename()', err)
     end
 
     return true
@@ -170,58 +174,76 @@ function BaseDir:put(extpath, newpath)
 
     local ok, err = rename(extpath, newpath)
     if not ok then
-        return false, toerror(err)
+        return false, errorf('failed to rename()', err)
     end
 
     return true
 end
 
---- open
+--- open returns a file object.
+--- if the pathname is not placed at the base directory, then return nil without error.
 --- @param pathname string
 --- @param mode? string
+---| '"r"' # read-only (default)
+---| '"w"' # write-only
+---| '"a"' # append-only
+---| '"r+"' # read-write
+---| '"w+"' # read-write
+---| '"a+"' # read-write
 --- @return file* f
 --- @return any err
 function BaseDir:open(pathname, mode)
     if mode == nil then
         mode = 'r'
-    elseif type(mode) ~= 'string' then
-        error('mode must be string', 2)
+    elseif type(mode) ~= 'string' or not find(mode, '^[rwa]%+?') then
+        error('mode must be string of "r", "w", "a", "r+", "w+", "a+"')
     end
 
     local apath, err = self:realpath(pathname)
-    if not apath then
-        -- got error or mode is not creation mode
-        if err or not find(mode, '^[wa]') then
-            return nil, err
-        end
-
+    if err then
+        return nil, errorf('failed to realpath()', pathname)
+    elseif not apath then
+        -- try to resolve the pathname as a directory pathname
         local dirpath, filename = self:dirname(pathname)
         apath, err = self:realpath(dirpath)
-        if not apath then
-            return nil, err
+        if err then
+            return nil, errorf('failed to realpath()', err)
+        elseif not apath then
+            return nil
         end
         apath = apath .. '/' .. filename
     end
 
     local f
-    f, err = open(apath, mode)
-    return f, err and toerror(err) or nil
+    f, err = fopen(apath, mode)
+    if not f then
+        if err.type == ENOENT then
+            -- ignore ENOENT error
+            return nil
+        end
+        return nil, errorf('failed to fopen()', err)
+    end
+    return f
 end
 
---- read
+--- read returns the content of the file.
+--- if the pathname is not placed at the base directory, then return nil with no error.
 --- @param pathname string
 --- @return string content
 --- @return any err
 function BaseDir:read(pathname)
-    local f, ferr = self:open(pathname)
-    if not f then
-        return nil, ferr
+    local f, err = self:open(pathname)
+    if err then
+        return nil, errorf('failed to open()', err)
+    elseif not f then
+        return nil
     end
 
-    local src, err = f:read('*a')
+    local src
+    src, err = f:read('*a')
     f:close()
     if err then
-        return nil, toerror(err)
+        return nil, errorf('failed to read()', err)
     end
 
     return src
@@ -247,22 +269,27 @@ function BaseDir:mkdir(pathname, mode)
     return mkdir(apath, mode, true, self.follow_symlink)
 end
 
---- opendir
+--- opendir returns a directory object.
+--- if the pathname is not placed at the base directory, then return nil with no error.
 --- @param pathname string
 --- @return userdata dir
 --- @return any err
 function BaseDir:opendir(pathname)
     local apath = self.basedir .. self:normalize(pathname)
-    local dir, derr = opendir(apath, self.follow_symlink)
-
-    if dir then
-        return dir
-    elseif derr.type ~= errno.ENOENT then
-        return nil, derr
+    local dir, err = opendir(apath, self.follow_symlink)
+    if err then
+        if err.type == ENOENT then
+            -- ignore ENOENT error
+            return nil
+        end
+        return nil, errorf('failed to opendir()', err)
     end
+
+    return dir
 end
 
---- readdir
+--- readdir returns a list of directory entries.
+--- if the pathname is not placed at the base directory, then return nil with no error.
 --- @param pathname string
 --- @return string[] entries
 --- @return any err
@@ -283,11 +310,10 @@ function BaseDir:readdir(pathname)
         entry, err = dir:readdir()
     end
     dir:closedir()
-    -- failed to readdir
-    if err then
-        return nil, err
-    end
 
+    if err then
+        return nil, errorf('failed to readdir()', err)
+    end
     return list
 end
 
