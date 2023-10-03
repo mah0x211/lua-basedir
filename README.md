@@ -109,8 +109,8 @@ print(bd:dirname('/foo/bar/../empty.txt')) -- /foo empty.txt
 
 ## apath, err, rpath = basedir:realpath( pathname )
 
-converts a pathname to an absolute path in the filesystem and in the base directory.
-
+converts a pathname to an absolute path in the filesystem and in the base directory.  
+if the pathname is not found, return `nil` without error.
 
 **Parameters**
 
@@ -133,7 +133,8 @@ print(bd:realpath('empty.txt'))
 
 ## stat, err = basedir:stat( pathname )
 
-obtains information about the file pointed to the specified pathname.
+obtains information about the file pointed to the specified pathname.  
+if the pathname is not found, return `nil` without error.
 
 **Parameters**
 
@@ -173,7 +174,8 @@ local stat = assert(bd:stat('empty.txt'))
 
 ## f, err = basedir:open( pathname [, mode] )
 
-open the specified file.
+open the specified file.  
+if the pathname is not found, it return `nil` without error.
 
 **Parameters**
 
@@ -242,7 +244,8 @@ assert(bd:rename('foo.txt', 'bar.txt))
 
 ## str, err = basedir:read( pathname )
 
-reads the contents of the specified file.
+reads the contents of the specified file.  
+if the pathname is not found, return `nil` without error.
 
 **Parameters**
 
@@ -295,7 +298,8 @@ make directories.
 
 ## dir, err = basedir:opendir( pathname )
 
-open a [directory stream](https://github.com/mah0x211/lua-opendir).
+open a [directory stream](https://github.com/mah0x211/lua-opendir).  
+if the pathname is not found, return `nil` without error.
 
 **Parameters**
 
@@ -309,7 +313,8 @@ open a [directory stream](https://github.com/mah0x211/lua-opendir).
 
 ## entries, err = basedir:readdir( pathname )
 
-returns a directory contents of pathname.
+returns a directory contents of pathname.  
+if the pathname is not found, return `nil` without error.
 
 **Parameters**
 

@@ -1,6 +1,7 @@
 require('luacov')
 local unpack = unpack or table.unpack
 local testcase = require('testcase')
+local assert = require('assert')
 local basedir = require('basedir')
 local mkdir = require('mkdir')
 local rmdir = require('rmdir')
