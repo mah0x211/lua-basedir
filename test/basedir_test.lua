@@ -37,6 +37,14 @@ function testcase.new()
             },
             match = 'follow_symlink must be boolean',
         },
+        {
+            arg = {
+                TESTDIR,
+                false,
+                '',
+            },
+            match = 'toctou must be boolean',
+        },
     }) do
         local err = assert.throws(basedir.new, unpack(v.arg))
         assert.match(err, v.match, false)
@@ -242,7 +250,7 @@ function testcase.opendir()
     -- test that open diretory
     local dir, err = r:opendir('/')
     assert.is_nil(err)
-    assert.match(tostring(dir), 'dir*:')
+    assert.match(tostring(dir), 'dir: ')
     dir:closedir()
 
     -- test that returns nil if it is not directory
@@ -254,13 +262,32 @@ function testcase.opendir()
     r = basedir.new(TESTDIR, true)
     dir, err = r:opendir('/out_of_basedir')
     assert.is_nil(err)
-    assert.match(tostring(dir), 'dir*:')
+    assert.match(tostring(dir), 'dir: ')
     dir:closedir()
 
     -- test that returns nil if it does not exist
     dir, err = r:opendir('/noent')
     assert.is_nil(dir)
     assert.is_nil(err)
+
+    -- test that toctou=true opens a regular directory
+    r = basedir.new(TESTDIR, false, true)
+    dir, err = r:opendir('/')
+    assert.is_nil(err)
+    assert.match(tostring(dir), 'dir: ')
+    dir:closedir()
+
+    -- test that toctou=true rejects symlink (follow_symlink=false)
+    dir, err = r:opendir('/out_of_basedir')
+    assert.is_nil(dir)
+    assert.re_match(err, 'not a directory', 'i')
+
+    -- test that toctou=true follows symlink when follow_symlink=true
+    r = basedir.new(TESTDIR, true, true)
+    dir, err = r:opendir('/out_of_basedir')
+    assert.is_nil(err)
+    assert.match(tostring(dir), 'dir: ')
+    dir:closedir()
 end
 
 function testcase.readdir()
