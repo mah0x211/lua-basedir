@@ -17,7 +17,7 @@ luarocks install basedir
 the following functions return the error object created by https://github.com/mah0x211/lua-error module.
 
 
-## bd = basedir.new( pathname [, follow_symlink] )
+## bd = basedir.new( pathname [, follow_symlink [, toctou]] )
 
 create a basedir object.
 
@@ -25,6 +25,18 @@ create a basedir object.
 
 - `pathname:string`: pathname of the base directory
 - `follow_symlink:boolean`: follow symbolic links. (default: `false`)
+- `toctou:boolean`: enable TOCTOU (Time-Of-Check Time-Of-Use) safe directory traversal via `openat(2)` for `opendir` and `readdir`. (default: `false`)
+  - When `true`, each path segment is opened with `openat(2)` relative to the previously opened directory file descriptor, eliminating the race window between path resolution steps.
+  - When `follow_symlink=false`, `O_NOFOLLOW` is passed to every `openat(2)` call, so symbolic links at **any** position are rejected (`ENOTDIR`).
+
+**Behavior by parameter combination**
+
+| `follow_symlink` | `toctou` | symlink behavior |
+|:---:|:---:|---|
+| `true` | `false` | all symbolic links are followed |
+| `true` | `true` | all symbolic links are followed, TOCTOU-safe |
+| `false` | `false` | intermediate symbolic links followed; final component rejected (`ENOTDIR`) |
+| `false` | `true` | symbolic links at all positions rejected (`ENOTDIR`) |
 
 
 **Returns**
@@ -299,7 +311,8 @@ make directories.
 ## dir, err = basedir:opendir( pathname )
 
 open a [directory stream](https://github.com/mah0x211/lua-opendir).  
-if the pathname is not found, return `nil` without error.
+if the pathname is not found, return `nil` without error.  
+uses the `follow_symlink` and `toctou` settings specified at construction time.
 
 **Parameters**
 
@@ -314,7 +327,8 @@ if the pathname is not found, return `nil` without error.
 ## entries, err = basedir:readdir( pathname )
 
 returns a directory contents of pathname.  
-if the pathname is not found, return `nil` without error.
+if the pathname is not found, return `nil` without error.  
+uses the `follow_symlink` and `toctou` settings specified at construction time.
 
 **Parameters**
 

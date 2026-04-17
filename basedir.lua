@@ -42,6 +42,7 @@ local ENOENT = require('errno').ENOENT
 --- @class BaseDir
 --- @field basedir string
 --- @field follow_symlink boolean
+--- @field toctou boolean
 local BaseDir = {}
 BaseDir.__index = BaseDir
 
@@ -276,7 +277,7 @@ end
 --- @return any err
 function BaseDir:opendir(pathname)
     local apath = self.basedir .. self:normalize(pathname)
-    local dir, err = opendir(apath, self.follow_symlink)
+    local dir, err = opendir(apath, self.follow_symlink, self.toctou)
     if err then
         if err.type == ENOENT then
             -- ignore ENOENT error
@@ -320,12 +321,15 @@ end
 --- new
 --- @param pathname string
 --- @param follow_symlink? boolean
+--- @param toctou? boolean
 --- @return BaseDir
-local function new(pathname, follow_symlink)
+local function new(pathname, follow_symlink, toctou)
     if type(pathname) ~= 'string' then
         error('pathname must be string')
     elseif follow_symlink ~= nil and type(follow_symlink) ~= 'boolean' then
         error('follow_symlink must be boolean')
+    elseif toctou ~= nil and type(toctou) ~= 'boolean' then
+        error('toctou must be boolean')
     end
 
     local basedir = pathname
@@ -358,6 +362,7 @@ local function new(pathname, follow_symlink)
     return setmetatable({
         basedir = basedir,
         follow_symlink = follow_symlink,
+        toctou = toctou == true,
     }, BaseDir)
 end
 
